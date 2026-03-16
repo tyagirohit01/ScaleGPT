@@ -70,7 +70,7 @@ const adminLimiter = rateLimit({
 });
 
 app.use(cors({
-  origin: "https://scaleai-production.up.railway.app/",
+  origin: "https://scaleai-production.up.railway.app",
   credentials: true,
 }));
 app.use(express.json());
