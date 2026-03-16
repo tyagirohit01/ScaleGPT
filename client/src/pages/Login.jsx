@@ -93,8 +93,8 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     const url = state === 'login'
-      ? 'http://localhost:3000/api/user/login'
-      : 'http://localhost:3000/api/user/register';
+      ? 'https://scaleai-production.up.railway.app/api/user/login'
+      : 'https://scaleai-production.up.railway.app/api/user/register';
     const payload = state === 'login'
       ? { email, password }
       : { name, email, password };
