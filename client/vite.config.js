@@ -5,8 +5,8 @@ export default defineConfig({
   plugins: [tailwindcss()],
   server: {
     proxy: {
-      "/api": "https://scaleai-production.up.railway.app/",
-      "/uploads": "https://scaleai-production.up.railway.app/",  // ← ADD THIS
+      "/api": "https://scalegpt-production-c429.up.railway.app/",
+      "/uploads": "https://scalegpt-production-c429.up.railway.app/",  // ← ADD THIS
     },
   },
 });

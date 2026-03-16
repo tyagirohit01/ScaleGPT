@@ -5,7 +5,7 @@ const Logout = () => {
 
     const handleLogout = async () => {
         try {
-            await fetch("https://scaleai-production.up.railway.app/api/user/logout", {
+            await fetch("https://scalegpt-production-c429.up.railway.app/api/user/logout", {
                 method: "POST",
                 credentials: "include"
             });

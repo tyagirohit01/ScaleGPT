@@ -93,8 +93,8 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     const url = state === 'login'
-      ? 'https://scaleai-production.up.railway.app/api/user/login'
-      : 'https://scaleai-production.up.railway.app/api/user/register';
+      ? 'https://scalegpt-production-c429.up.railway.app/api/user/login'
+      : 'https://scalegpt-production-c429.up.railway.app/api/user/register';
     const payload = state === 'login'
       ? { email, password }
       : { name, email, password };
