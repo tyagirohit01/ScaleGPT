@@ -13,7 +13,8 @@ export const AppContextProvider = ({ children }) => {
 
   const navigate = useNavigate();
   const [user, setUser]                   = useState(null);
-  const [showHero, setShowHero]           = useState(true);
+  //  Start as NULL (unknown) instead of true — prevents hero flash
+  const [showHero, setShowHero]           = useState(null);
   const [chats, setChats]                 = useState([]);
   const [selectedChat, setSelectedChat]   = useState(null);
   const [theme, setTheme]                 = useState(localStorage.getItem('theme') || 'light');
@@ -21,8 +22,9 @@ export const AppContextProvider = ({ children }) => {
   const [pricing, setPricing]             = useState(null);
   const [chatMode, setChatMode]           = useState("chat");
   const [authReady, setAuthReady]         = useState(false);
+  //  New state — tracks if chats have been loaded
+  const [chatsReady, setChatsReady]       = useState(false);
 
-  // ── load token from storage ──
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     if (savedToken) {
@@ -47,7 +49,6 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [user]);
 
-  // ── redirect unauthenticated users ──
   useEffect(() => {
     if (authReady && !user) {
       const publicPaths = ["/login", "/pricing", "/community"];
@@ -57,21 +58,9 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [authReady, user]);
 
-  // ── restore last chat on refresh ──
-  useEffect(() => {
-    if (!chats || chats.length === 0) return;
-    const lastChatId = localStorage.getItem("last_chat_id");
-    const foundChat  = chats.find(c => c._id === lastChatId);
-    if (foundChat) {
-      setSelectedChat(foundChat);
-      setShowHero(false);
-    } else {
-      setSelectedChat(chats[0]);
-      setShowHero(false);
-    }
-  }, [chats]);
+  // ✅ REMOVED the duplicate useEffect that was setting selectedChat from chats
+  // It was causing the flash — fetchUserChats already handles this
 
-  // ── theme ──
   useEffect(() => {
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
@@ -80,7 +69,6 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [theme]);
 
-  // ── fetchUser ──
   const fetchUser = async (authToken) => {
     try {
       const { data } = await axios.get("/api/user/data", {
@@ -101,7 +89,6 @@ export const AppContextProvider = ({ children }) => {
     }
   };
 
-  // ── fetchUserChats ──
   const fetchUserChats = async () => {
     try {
       const { data } = await axios.get('/api/chat/get', {
@@ -112,7 +99,9 @@ export const AppContextProvider = ({ children }) => {
         if (data.chats.length > 0) {
           const lastChatId = localStorage.getItem("last_chat_id");
           const last = data.chats.find(c => c._id === lastChatId);
-          setSelectedChat(last || data.chats[0]);
+          const chatToSelect = last || data.chats[0];
+          // Set everything in one go — no double render
+          setSelectedChat(chatToSelect);
           setShowHero(false);
         } else {
           setSelectedChat(null);
@@ -124,10 +113,12 @@ export const AppContextProvider = ({ children }) => {
       }
     } catch (error) {
       toast.error(error?.response?.data?.message || error?.message || "Server error");
+    } finally {
+      //  Mark chats as ready regardless of success or failure
+      setChatsReady(true);
     }
   };
-  
-  // api to create a new chat
+
   const createNewChat = async () => {
     if (!user) {
       toast.error("Please login to create a new chat");
@@ -155,7 +146,6 @@ export const AppContextProvider = ({ children }) => {
     }
   };
 
-  // ── deleteChat ──
   const deleteChat = async (chatId) => {
     try {
       if (!chatId || chatId.length < 20) {
@@ -169,11 +159,9 @@ export const AppContextProvider = ({ children }) => {
         });
         return;
       }
-      console.log("DELETE URL:", axios.defaults.baseURL + `/api/chat/delete/${chatId}`);
-      await axios.delete(`/api/chat/delete/${chatId}`, {  // ← removed leading /
+      await axios.delete(`/api/chat/delete/${chatId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  
       setChats(prev => {
         const updated = prev.filter(c => c._id !== chatId);
         if (selectedChat?._id === chatId) {
@@ -182,7 +170,6 @@ export const AppContextProvider = ({ children }) => {
         }
         return updated;
       });
-  
       toast.success("Chat deleted");
     } catch (error) {
       console.error("Delete failed:", error);
@@ -190,17 +177,14 @@ export const AppContextProvider = ({ children }) => {
     }
   };
 
-  // ── renameChat ──
   const renameChat = async (chatId, newName) => {
     if (!newName || !newName.trim()) return;
-
     try {
       const { data } = await axios.put(
         `/api/chat/rename/${chatId}`,
         { name: newName.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       if (data.success) {
         setChats(prev =>
           prev.map(c => c._id === chatId ? { ...c, name: newName.trim() } : c)
@@ -216,7 +200,6 @@ export const AppContextProvider = ({ children }) => {
     }
   };
 
-  // ── logout ──
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("last_chat_id");
@@ -224,6 +207,7 @@ export const AppContextProvider = ({ children }) => {
     setChats([]);
     setSelectedChat(null);
     setShowHero(true);
+    setChatsReady(false);
     navigate("/login");
   };
 
@@ -243,6 +227,7 @@ export const AppContextProvider = ({ children }) => {
       chatMode, setChatMode,
       fetchUser,
       authReady,
+      chatsReady,
       showHero, setShowHero,
     }}>
       {children}

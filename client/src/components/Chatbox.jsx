@@ -21,6 +21,22 @@ const Chatbox = ({ onMenuClick }) => {
     showHero, setShowHero,
   } = useAppContext();
 
+  if (!chatsReady && user) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "center",
+      height: "100%", width: "100%", background: "#06060e",
+    }}>
+      <div style={{
+        width: 32, height: 32, borderRadius: "50%",
+        border: "3px solid rgba(163,112,247,0.2)",
+        borderTop: "3px solid #a370f7",
+        animation: "spin 0.8s linear infinite",
+      }}/>
+    </div>
+  );
+  }
+
   const [input, setInput]                 = useState("");
   const [loading, setLoading]             = useState(false);
   const [selectedModel, setSelectedModel] = useState("Scale Fast");
