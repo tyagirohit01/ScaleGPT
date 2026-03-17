@@ -19,6 +19,7 @@ const Chatbox = ({ onMenuClick }) => {
     selectedChat, setSelectedChat,
     chatMode, token, user, navigate,
     showHero, setShowHero,
+    chatsReady,
   } = useAppContext();
 
   if (!chatsReady && user) {
