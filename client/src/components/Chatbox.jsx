@@ -63,7 +63,7 @@ const Chatbox = ({ onMenuClick }) => {
       setSelectedChat(chat);
     }
   
-    const tempId = chat._id; // ← save temp id before API call
+    const tempId = chat._id;
   
     const userMessage = {
       role:      "user",
@@ -111,7 +111,6 @@ const Chatbox = ({ onMenuClick }) => {
           updatedAt: new Date(),
         };
   
-        // ← replace by tempId not realId — tempId is what's currently in state
         setChats(prev => prev.map(c => c._id === tempId ? chatWithReply : c));
         setSelectedChat(chatWithReply);
         localStorage.setItem("last_chat_id", realId);
@@ -143,55 +142,102 @@ const Chatbox = ({ onMenuClick }) => {
 
   return (
     <div style={{
-      display: "flex", flexDirection: "column",
-      height: "100%", width: "100%",
-      overflow: "hidden", background: "#06060e",
+      display: "flex",
+      flexDirection: "column",
+      height: "100%",
+      width: "100%",
+      overflow: "hidden",
+      background: "#06060e",
       fontFamily: "'Outfit', sans-serif",
+      paddingTop: "env(safe-area-inset-top)",
+      paddingBottom: "env(safe-area-inset-bottom)",
+      paddingLeft: "env(safe-area-inset-left)",
+      paddingRight: "env(safe-area-inset-right)",
+      boxSizing: "border-box",
     }}>
 
       {/* ── TOPBAR ── */}
       <div style={{
-        padding: "0 16px", height: 50, flexShrink: 0,
+        minHeight: 50,
+        padding: "8px 12px",
+        flexShrink: 0,
         borderBottom: "1px solid rgba(255,255,255,0.06)",
         background: "#06060e",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
+        boxSizing: "border-box",
+        width: "100%",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+
+        {/* Left side */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          minWidth: 0,
+          flex: 1,
+        }}>
           <button
             onClick={onMenuClick}
             className="md:hidden"
             style={{
-              background: "none", border: "none",
-              color: "#9090b0", fontSize: 18,
-              cursor: "pointer", padding: "4px 8px 4px 0",
-              display: "flex", alignItems: "center", flexShrink: 0,
+              background: "none",
+              border: "none",
+              color: "#9090b0",
+              fontSize: "clamp(16px, 4vw, 20px)",
+              cursor: "pointer",
+              padding: "8px",
+              display: "flex",
+              alignItems: "center",
+              flexShrink: 0,
+              minWidth: 36,
+              minHeight: 36,
             }}
           >☰</button>
 
           <span style={{
-            fontSize: 13, fontWeight: 500, color: "#9090b0",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            maxWidth: "clamp(100px, 30vw, 260px)",
+            fontSize: "clamp(11px, 3vw, 13px)",
+            fontWeight: 500,
+            color: "#9090b0",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            minWidth: 0,
+            flex: 1,
           }}>
             {showHero ? "ScaleGPT" : selectedChat?.name || "Conversation"}
           </span>
 
           <span style={{
-            fontSize: 11, padding: "3px 8px", borderRadius: 20,
+            fontSize: "clamp(9px, 2.5vw, 11px)",
+            padding: "3px 7px",
+            borderRadius: 20,
             background: "rgba(165,112,247,.12)",
             border: "1px solid rgba(165,112,247,.25)",
-            color: "#a370f7", fontWeight: 600, flexShrink: 0,
+            color: "#a370f7",
+            fontWeight: 600,
+            flexShrink: 0,
+            whiteSpace: "nowrap",
           }}>{selectedModel}</span>
         </div>
 
-        <div style={{ display: "flex", gap: 6 }}>
+        {/* Right side buttons */}
+        <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
           {["↗ Share", "⚙"].map(label => (
             <button key={label} style={{
               background: "#10101f",
               border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: 7, color: "#9090b0",
-              fontSize: 11, fontWeight: 500,
-              padding: "5px 10px", cursor: "pointer", flexShrink: 0,
+              borderRadius: 7,
+              color: "#9090b0",
+              fontSize: "clamp(10px, 2.5vw, 11px)",
+              fontWeight: 500,
+              padding: "6px 8px",
+              cursor: "pointer",
+              flexShrink: 0,
+              minHeight: 32,
+              whiteSpace: "nowrap",
             }}
             onMouseEnter={e => e.currentTarget.style.color = "#f0f0ff"}
             onMouseLeave={e => e.currentTarget.style.color = "#9090b0"}
@@ -202,16 +248,24 @@ const Chatbox = ({ onMenuClick }) => {
 
       {/* ── HERO or CHAT ── */}
       <div style={{
-        flex: 1, overflowY: "auto", overflowX: "hidden",
-        display: "flex", flexDirection: "column",
+        flex: 1,
+        overflowY: "auto",
+        overflowX: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        WebkitOverflowScrolling: "touch",
       }}>
         {showHero ? (
           <HeroView onSend={handleSend} />
         ) : (
           <div style={{
-            padding: "16px 16px",
-            display: "flex", flexDirection: "column",
-            alignItems: "stretch", gap: 0,
+            padding: "clamp(8px, 3vw, 16px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            gap: 0,
+            boxSizing: "border-box",
+            width: "100%",
           }}>
             {(selectedChat?.messages || [])
               .filter(msg => msg && msg.role)

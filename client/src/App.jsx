@@ -27,7 +27,17 @@ function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = React.useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#06060e] relative">
+    <div style={{
+      display: "flex",
+      // ✅ Use dvh — dynamic viewport height, accounts for mobile browser bar
+      height: "100dvh",
+      width: "100vw",
+      overflow: "hidden",
+      background: "#06060e",
+      position: "fixed",
+      top: 0,
+      left: 0,
+    }}>
 
       {/* Ambient orbs */}
       <div className="absolute rounded-full pointer-events-none z-0 hidden md:block" style={{
@@ -58,7 +68,17 @@ function MainLayout() {
       </div>
 
       {/* Main */}
-      <div className="flex-1 min-w-0 relative z-10 overflow-hidden flex flex-col">
+      <div style={{
+        flex: 1,
+        minWidth: 0,
+        position: "relative",
+        zIndex: 10,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        // ✅ Full height, no scrolling at this level
+        height: "100%",
+      }}>
         <Chatbox onMenuClick={() => setSidebarOpen(true)} />
       </div>
     </div>

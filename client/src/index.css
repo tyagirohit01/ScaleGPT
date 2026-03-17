@@ -8,18 +8,38 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+html {
   height: 100%;
+  height: -webkit-fill-available;
   width: 100%;
-  margin: 0;
-  padding: 0;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
 body {
+  height: 100%;
+  height: -webkit-fill-available;
+  width: 100%;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
   font-family: 'Outfit', sans-serif;
   -webkit-font-smoothing: antialiased;
   background: #06060e;
   color: #f0f0ff;
+  /* Prevent pull-to-refresh and overscroll on mobile */
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: none;
+  touch-action: pan-x pan-y;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
 ::-webkit-scrollbar { width: 3px; }
