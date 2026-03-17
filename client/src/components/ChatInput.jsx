@@ -170,7 +170,7 @@ export default function ChatInput({ value, onChange, onSend, loading, selectedMo
               border: '1px solid rgba(163,112,247,0.3)',
               borderRadius: 6, color: '#a370f7',
               fontFamily: "'Outfit', sans-serif",
-              fontSize: 11, fontWeight: 600,
+              fontSize: 16, fontWeight: 600,
               padding: '4px 24px 4px 10px',
               outline: 'none', cursor: 'pointer', appearance: 'none',
               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23a370f7'/%3E%3C/svg%3E")`,
@@ -212,7 +212,7 @@ export default function ChatInput({ value, onChange, onSend, loading, selectedMo
           disabled={loading || uploading}
           style={{
             flex: 1, background: 'none', border: 'none',
-            color: '#f0f0ff', fontSize: 13, outline: 'none',
+            color: '#f0f0ff', fontSize: 16, outline: 'none',
             minHeight: 20, maxHeight: 110,
             lineHeight: 1.6, resize: 'none',
             fontFamily: "'Outfit', sans-serif",

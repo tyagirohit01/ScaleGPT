@@ -72,3 +72,8 @@ body {
 }
 .grad-btn { background: linear-gradient(135deg, #7b5ea7, #f067a6); }
 .grad-bar { background: linear-gradient(90deg, #7b5ea7, #f067a6); }
+
+/* Prevent iOS/Android auto-zoom on input focus */
+input, textarea, select {
+  font-size: 16px !important;
+}

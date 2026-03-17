@@ -128,7 +128,7 @@ const Login = () => {
       : '1px solid rgba(255,255,255,0.08)',
     borderRadius: 10,
     color: '#f0f0ff',
-    fontSize: 13,
+    fontSize: 16,
     padding: '11px 14px',
     outline: 'none',
     fontFamily: "'Outfit', sans-serif",
