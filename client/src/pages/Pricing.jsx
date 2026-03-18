@@ -78,6 +78,17 @@ const PLANS = [
 ];
 
 export default function Pricing() {
+
+  // llow body to scroll on this page
+  React.useEffect(() => {
+    document.body.style.overflow = 'auto';
+    document.body.style.position = 'static';
+    return () => {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+    };
+  }, []);
+
   const [selected, setSelected]   = useState(PLANS[1]);
   const [prev, setPrev]           = useState(null);
   const [animating, setAnimating] = useState(false);
@@ -97,8 +108,14 @@ export default function Pricing() {
     <div style={{
       minHeight: "100vh", background: "#06060e",
       fontFamily: "'Outfit', sans-serif", color: "#f0f0ff",
-      position: "relative", overflow: "hidden",
+      position: "relative",
+      // ✅ Allow scrolling on pricing page
+      overflowX: "hidden",
+      overflowY: "auto",
+      // ✅ Override the fixed body for this page
+      height: "100dvh",
     }}>
+
       <ParticleCanvas />
 
       {/* Orbs */}

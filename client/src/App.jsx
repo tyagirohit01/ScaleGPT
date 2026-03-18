@@ -50,12 +50,13 @@ function MainLayout() {
       }}/>
 
       {/* Mobile overlay */}
-      {sidebarOpen && (
+       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
+         className="fixed inset-0 bg-black/60 md:hidden"
+         style={{ zIndex: 45 }}
+         onClick={() => setSidebarOpen(false)}
         />
-      )}
+       )}
 
       {/* Sidebar */}
       <div className={`
