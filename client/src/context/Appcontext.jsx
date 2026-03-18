@@ -22,7 +22,6 @@ export const AppContextProvider = ({ children }) => {
   const [chatMode, setChatMode]           = useState("chat");
   const [authReady, setAuthReady]         = useState(false);
   const [chatsReady, setChatsReady]       = useState(false);
-  // Track if this is a fresh login or a page refresh
   const [isFirstLogin, setIsFirstLogin]   = useState(false);
 
   useEffect(() => {
@@ -93,24 +92,11 @@ export const AppContextProvider = ({ children }) => {
       });
       if (data?.success && Array.isArray(data.chats)) {
         setChats(data.chats);
-        if (data.chats.length > 0) {
-          if (isFirstLogin) {
-            // Fresh login — always show hero screen
-            setSelectedChat(null);
-            setShowHero(true);
-            setIsFirstLogin(false);
-          } else {
-            // Page refresh — restore last chat
-            const lastChatId = localStorage.getItem("last_chat_id");
-            const last = data.chats.find(c => c._id === lastChatId);
-            const chatToSelect = last || data.chats[0];
-            setSelectedChat(chatToSelect);
-            setShowHero(false);
-          }
-        } else {
-          setSelectedChat(null);
-          setShowHero(true);
-        }
+        // ✅ ALWAYS show hero — no matter if login, refresh, or reopen
+        // Chats are loaded in sidebar, user picks one manually
+        setSelectedChat(null);
+        setShowHero(true);
+        setIsFirstLogin(false);
       } else {
         setChats([]);
         setShowHero(true);
@@ -155,8 +141,8 @@ export const AppContextProvider = ({ children }) => {
         setChats(prev => {
           const updated = prev.filter(c => c._id !== chatId);
           if (selectedChat?._id === chatId) {
-            setSelectedChat(updated.length > 0 ? updated[0] : null);
-            if (updated.length === 0) setShowHero(true);
+            setSelectedChat(null);
+            setShowHero(true);
           }
           return updated;
         });
@@ -168,8 +154,8 @@ export const AppContextProvider = ({ children }) => {
       setChats(prev => {
         const updated = prev.filter(c => c._id !== chatId);
         if (selectedChat?._id === chatId) {
-          setSelectedChat(updated.length > 0 ? updated[0] : null);
-          if (updated.length === 0) setShowHero(true);
+          setSelectedChat(null);
+          setShowHero(true);
         }
         return updated;
       });
@@ -203,7 +189,6 @@ export const AppContextProvider = ({ children }) => {
     }
   };
 
-  // ✅ Call this from Login page after successful login
   const loginSuccess = (authToken) => {
     setIsFirstLogin(true);
     localStorage.setItem("token", authToken);
