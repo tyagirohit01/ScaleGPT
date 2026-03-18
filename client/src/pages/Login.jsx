@@ -86,7 +86,8 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading]   = useState(false);
   const [focused, setFocused]   = useState('');
-  const { setToken }            = useAppContext();
+  //  use loginSuccess instead of setToken
+  const { loginSuccess }        = useAppContext();
   const navigate                = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -103,8 +104,8 @@ const Login = () => {
       const { data } = await axios.post(url, payload);
       if (!data.success) { toast.error(data.message); return; }
       if (state === 'login') {
-        localStorage.setItem('token', data.token);
-        setToken(data.token);
+        //  loginSuccess sets isFirstLogin=true so hero shows after login
+        loginSuccess(data.token);
         toast.success('Welcome back!');
         navigate('/');
       }
@@ -211,7 +212,6 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* Name — register only */}
           {state === 'register' && (
             <div style={{ animation: 'loginRise .4s ease both' }}>
               <label style={{ fontSize: 11, color: '#5a5a7a', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
@@ -229,7 +229,6 @@ const Login = () => {
             </div>
           )}
 
-          {/* Email */}
           <div>
             <label style={{ fontSize: 11, color: '#5a5a7a', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
               Email
@@ -245,7 +244,6 @@ const Login = () => {
             />
           </div>
 
-          {/* Password */}
           <div>
             <label style={{ fontSize: 11, color: '#5a5a7a', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
               Password
@@ -261,7 +259,6 @@ const Login = () => {
             />
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
@@ -296,7 +293,6 @@ const Login = () => {
           </button>
         </form>
 
-        {/* Footer */}
         <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: '#5a5a7a' }}>
           {state === 'login' ? (
             <>Don't have an account?{' '}

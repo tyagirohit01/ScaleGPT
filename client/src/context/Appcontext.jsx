@@ -13,7 +13,6 @@ export const AppContextProvider = ({ children }) => {
 
   const navigate = useNavigate();
   const [user, setUser]                   = useState(null);
-  //  Start as NULL (unknown) instead of true — prevents hero flash
   const [showHero, setShowHero]           = useState(null);
   const [chats, setChats]                 = useState([]);
   const [selectedChat, setSelectedChat]   = useState(null);
@@ -22,8 +21,9 @@ export const AppContextProvider = ({ children }) => {
   const [pricing, setPricing]             = useState(null);
   const [chatMode, setChatMode]           = useState("chat");
   const [authReady, setAuthReady]         = useState(false);
-  //  New state — tracks if chats have been loaded
   const [chatsReady, setChatsReady]       = useState(false);
+  // Track if this is a fresh login or a page refresh
+  const [isFirstLogin, setIsFirstLogin]   = useState(false);
 
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
@@ -57,9 +57,6 @@ export const AppContextProvider = ({ children }) => {
       }
     }
   }, [authReady, user]);
-
-  // ✅ REMOVED the duplicate useEffect that was setting selectedChat from chats
-  // It was causing the flash — fetchUserChats already handles this
 
   useEffect(() => {
     if (theme === "dark") {
@@ -97,12 +94,19 @@ export const AppContextProvider = ({ children }) => {
       if (data?.success && Array.isArray(data.chats)) {
         setChats(data.chats);
         if (data.chats.length > 0) {
-          const lastChatId = localStorage.getItem("last_chat_id");
-          const last = data.chats.find(c => c._id === lastChatId);
-          const chatToSelect = last || data.chats[0];
-          // Set everything in one go — no double render
-          setSelectedChat(chatToSelect);
-          setShowHero(false);
+          if (isFirstLogin) {
+            // Fresh login — always show hero screen
+            setSelectedChat(null);
+            setShowHero(true);
+            setIsFirstLogin(false);
+          } else {
+            // Page refresh — restore last chat
+            const lastChatId = localStorage.getItem("last_chat_id");
+            const last = data.chats.find(c => c._id === lastChatId);
+            const chatToSelect = last || data.chats[0];
+            setSelectedChat(chatToSelect);
+            setShowHero(false);
+          }
         } else {
           setSelectedChat(null);
           setShowHero(true);
@@ -114,7 +118,6 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       toast.error(error?.response?.data?.message || error?.message || "Server error");
     } finally {
-      //  Mark chats as ready regardless of success or failure
       setChatsReady(true);
     }
   };
@@ -200,6 +203,13 @@ export const AppContextProvider = ({ children }) => {
     }
   };
 
+  // ✅ Call this from Login page after successful login
+  const loginSuccess = (authToken) => {
+    setIsFirstLogin(true);
+    localStorage.setItem("token", authToken);
+    setToken(authToken);
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("last_chat_id");
@@ -208,6 +218,7 @@ export const AppContextProvider = ({ children }) => {
     setSelectedChat(null);
     setShowHero(true);
     setChatsReady(false);
+    setIsFirstLogin(false);
     navigate("/login");
   };
 
@@ -224,6 +235,7 @@ export const AppContextProvider = ({ children }) => {
       axios,
       deleteChat, renameChat,
       logout,
+      loginSuccess,
       chatMode, setChatMode,
       fetchUser,
       authReady,
