@@ -12,12 +12,9 @@ const CHIPS = [
   { icon: "🎯", label: "Interview Prep", q: "Explain system design interview topics" },
 ];
 
-const MODELS = ["Scale Fast", "Scale Pro", "Scale Research", "Scale Vision"];
-
 export default function HeroView({ onSend }) {
   const { token } = useAppContext();
   const [input, setInput]         = useState("");
-  const [model, setModel]         = useState("Scale Fast");
   const [webOn, setWebOn]         = useState(false);
   const [memoryOn, setMemoryOn]   = useState(false);
   const [recording, setRecording] = useState(false);
@@ -25,36 +22,64 @@ export default function HeroView({ onSend }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef              = useRef(null);
   const recognitionRef            = useRef(null);
+  const textareaRef               = useRef(null);
+
+  // ── Auto resize textarea as text grows ──
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 200) + "px";
+    // scroll to bottom so latest spoken text is always visible
+    el.scrollTop = el.scrollHeight;
+  }, [input]);
 
   // ── Voice recording setup ──
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
+    // ✅ continuous = true so it keeps listening until you stop
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
+
+    let finalTranscript = "";
+
     recognition.onresult = (e) => {
-      const transcript = Array.from(e.results)
-        .map(r => r[0].transcript)
-        .join("");
-      setInput(transcript);
+      let interim = "";
+      finalTranscript = "";
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          finalTranscript += e.results[i][0].transcript + " ";
+        } else {
+          interim += e.results[i][0].transcript;
+        }
+      }
+      // ✅ Show final + interim together in real time
+      setInput((finalTranscript + interim).trim());
     };
-    recognition.onend = () => setRecording(false);
-    recognition.onerror = () => setRecording(false);
+
+    recognition.onend = () => {
+      setRecording(false);
+    };
+    recognition.onerror = () => {
+      setRecording(false);
+    };
     recognitionRef.current = recognition;
   }, []);
 
   function toggleVoice() {
     const recognition = recognitionRef.current;
     if (!recognition) {
-      alert("Voice not supported on this browser.");
+      alert("Voice not supported on this browser. Try Chrome.");
       return;
     }
     if (recording) {
       recognition.stop();
       setRecording(false);
     } else {
+      setInput("");
       recognition.start();
       setRecording(true);
     }
@@ -102,6 +127,10 @@ export default function HeroView({ onSend }) {
   function fire(text) {
     const val = text || input.trim();
     if (!val && files.length === 0) return;
+    if (recording) {
+      recognitionRef.current?.stop();
+      setRecording(false);
+    }
     onSend(val, files);
     setInput("");
     setFiles([]);
@@ -142,7 +171,7 @@ export default function HeroView({ onSend }) {
           Your intelligent AI workspace — ask anything, build anything.
         </p>
 
-        {/* ── MAIN INPUT BOX ── */}
+        {/* Main input box */}
         <div style={{
           width: "100%",
           animation: "heroRise .8s .18s cubic-bezier(.16,1,.3,1) both",
@@ -176,25 +205,43 @@ export default function HeroView({ onSend }) {
             </div>
           )}
 
-          {/* Input row */}
+          {/* ✅ Input box with textarea so it grows as voice input fills */}
           <div style={{
-            display: "flex", alignItems: "center",
+            display: "flex", alignItems: "flex-end",
             background: "#10101f",
-            border: "1px solid rgba(255,255,255,0.1)",
+            border: recording
+              ? "1px solid rgba(240,103,166,0.5)"
+              : "1px solid rgba(255,255,255,0.1)",
             borderRadius: 14, padding: "8px 8px 8px 14px",
             marginBottom: 10, gap: 6,
+            transition: "border-color .3s",
           }}>
-            <input
+            <textarea
+              ref={textareaRef}
               value={input}
               onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && fire()}
-              placeholder={recording ? "🎙 Listening…" : "Ask anything…"}
+              onKeyDown={e => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  fire();
+                }
+              }}
+              placeholder={recording ? "🎙 Listening — speak now…" : "Ask anything…"}
+              rows={1}
               style={{
                 flex: 1, background: "none", border: "none",
-                color: recording ? "#a370f7" : "#f0f0ff",
+                color: recording ? "#f0c0d8" : "#f0f0ff",
                 fontSize: "clamp(12px, 3.5vw, 14px)",
                 outline: "none", padding: "6px 0",
-                minWidth: 0,
+                minWidth: 0, resize: "none",
+                lineHeight: 1.6,
+                fontFamily: "'Outfit', sans-serif",
+                // ✅ grows up to 200px then scrolls
+                minHeight: 32,
+                maxHeight: 200,
+                overflowY: "auto",
+                WebkitOverflowScrolling: "touch",
+                transition: "color .3s",
               }}
             />
             <button
@@ -205,13 +252,16 @@ export default function HeroView({ onSend }) {
                 border: "none", borderRadius: 9, color: "#fff",
                 fontSize: "clamp(11px, 3vw, 12px)", fontWeight: 700,
                 cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                // ✅ stays at bottom of box when textarea grows
+                alignSelf: "flex-end",
+                marginBottom: 2,
               }}
               onMouseOver={e => e.currentTarget.style.opacity = ".88"}
               onMouseOut={e  => e.currentTarget.style.opacity = "1"}
             >Start Chatting</button>
           </div>
 
-          {/* ── TOOLS ROW ── */}
+          {/* Tools row */}
           <div style={{
             display: "flex", alignItems: "center",
             gap: 6, flexWrap: "wrap", justifyContent: "center",
@@ -268,9 +318,20 @@ export default function HeroView({ onSend }) {
                 background: recording ? "rgba(240,103,166,.15)" : "#13131f",
                 border: recording ? "1px solid rgba(240,103,166,.5)" : "1px solid rgba(255,255,255,0.07)",
                 color: recording ? "#f067a6" : "#5a5a7a",
-                animation: recording ? "pulse 1s ease-in-out infinite" : "none",
               }}
-            >🎙 {recording ? "Stop" : "Voice"}</button>
+            >
+              {recording ? (
+                <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{
+                    width: 7, height: 7, borderRadius: "50%",
+                    background: "#f067a6",
+                    display: "inline-block",
+                    animation: "pulse 1s ease-in-out infinite",
+                  }}/>
+                  Stop
+                </span>
+              ) : "🎙 Voice"}
+            </button>
 
             {/* Memory */}
             <button
@@ -286,42 +347,21 @@ export default function HeroView({ onSend }) {
               }}
             >🧠 Memory</button>
 
-            {/* Model selector */}
-            <select
-              value={model}
-              onChange={e => setModel(e.target.value)}
-              style={{
-                background: "rgba(123,94,167,0.1)",
-                border: "1px solid rgba(163,112,247,0.3)",
-                borderRadius: 8, color: "#a370f7",
-                fontFamily: "'Outfit', sans-serif",
-                fontSize: 12, fontWeight: 600,
-                padding: "6px 24px 6px 10px",
-                outline: "none", cursor: "pointer", appearance: "none",
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23a370f7'/%3E%3C/svg%3E")`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 8px center",
-              }}
-            >
-              {MODELS.map(m => (
-                <option key={m} value={m} style={{ background: "#13131f", color: "#f0f0ff" }}>{m}</option>
-              ))}
-            </select>
           </div>
 
-          {/* Recording indicator */}
+          {/* Recording live indicator */}
           {recording && (
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "center",
-              gap: 8, marginTop: 8,
-              color: "#f067a6", fontSize: 12, fontWeight: 500,
+              gap: 8, marginTop: 6,
+              color: "#f067a6", fontSize: 11, fontWeight: 500,
             }}>
               <div style={{
-                width: 8, height: 8, borderRadius: "50%",
+                width: 7, height: 7, borderRadius: "50%",
                 background: "#f067a6",
                 animation: "pulse 1s ease-in-out infinite",
               }}/>
-              Listening — speak now…
+              Recording — tap Stop or Start Chatting when done
             </div>
           )}
         </div>
@@ -354,7 +394,7 @@ export default function HeroView({ onSend }) {
         </div>
       </div>
 
-      {/* hidden file input */}
+      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -367,7 +407,7 @@ export default function HeroView({ onSend }) {
       <style>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(1.15); }
+          50%       { opacity: 0.5; transform: scale(1.2); }
         }
       `}</style>
     </div>
