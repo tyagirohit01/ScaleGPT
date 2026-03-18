@@ -1,26 +1,20 @@
-import  express from "express";
-import { getPublishedImages, registerUser } from "../controllers/userController.js";
-import { loginUser } from "../controllers/userController.js";
-import { getUser } from "../controllers/userController.js";
-import { logoutUser } from "../controllers/userController.js";
+import express from "express";
+import {
+  registerUser, loginUser, logoutUser,
+  getUser, getPublishedImages,
+  verifyEmail, forgotPassword, resetPassword,
+} from "../controllers/userController.js";
 import { protect } from "../middlewares/Auth.js";
 
+const userRouter = express.Router();
 
-const userRouter = express.Router()
-
-// Register a user 
-userRouter.post('/register', registerUser)
-
-// Login a user
-userRouter.post('/login', loginUser)
-
-// Logout a user
-userRouter.post('/logout', logoutUser)
-
-// Getting a user
-userRouter.get('/data', protect,  getUser)
-
-// published images
-userRouter.get('/published-images',  getPublishedImages)
+userRouter.post('/register',         registerUser);
+userRouter.post('/login',            loginUser);
+userRouter.post('/logout',           logoutUser);
+userRouter.get('/data',    protect,  getUser);
+userRouter.get('/verify-email',      verifyEmail);
+userRouter.post('/forgot-password',  forgotPassword);
+userRouter.post('/reset-password',   resetPassword);
+userRouter.get('/published-images',  getPublishedImages);
 
 export default userRouter;
