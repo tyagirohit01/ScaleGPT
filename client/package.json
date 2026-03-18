@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.13",
     "axios": "^1.12.2",
+    "crypto": "^1.0.1",
     "framer-motion": "^12.31.0",
     "lucide-react": "^0.563.0",
     "react": "^19.1.1",
@@ -19,6 +20,7 @@
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.9.1",
     "recharts": "^3.8.0",
+    "resend": "^6.9.4",
     "stripe": "^20.3.0",
     "tailwindcss": "^4.1.13",
     "uuid": "^13.0.0"
