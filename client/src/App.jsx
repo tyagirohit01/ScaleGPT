@@ -18,8 +18,8 @@ const App = () => {
         <Route path="/pricing"   element={<Pricing />} />
         <Route path="/admin"     element={<AdminDashboard />} />
         <Route path="/" element={<MainLayout />} />
-        <Route path="/verify-email"    element={<Login />} />
-        <Route path="/reset-password"  element={<Login />} />
+        <Route path="/verify-email"   element={<Login />} />
+        <Route path="/reset-password" element={<Login />} />
       </Routes>
     </>
   )

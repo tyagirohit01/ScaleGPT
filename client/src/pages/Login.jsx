@@ -56,25 +56,26 @@ function ParticleCanvas() {
 const BASE = 'https://scalegpt-production-c429.up.railway.app';
 
 const Login = () => {
-  const [state, setState]         = useState('login');
-  const [name, setName]           = useState('');
-  const [email, setEmail]         = useState('');
-  const [password, setPassword]   = useState('');
+  const [state, setState]             = useState('login');
+  const [name, setName]               = useState('');
+  const [email, setEmail]             = useState('');
+  const [password, setPassword]       = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [loading, setLoading]     = useState(false);
-  const [focused, setFocused]     = useState('');
-  const [searchParams]            = useSearchParams();
-  const { loginSuccess }          = useAppContext();
-  const navigate                  = useNavigate();
+  const [loading, setLoading]         = useState(false);
+  const [focused, setFocused]         = useState('');
+  const { loginSuccess }              = useAppContext();
+  const navigate                      = useNavigate();
 
-  // ✅ Auto-detect verify-email and reset-password flows from URL
+  // ✅ Read token directly from window.location — most reliable
   useEffect(() => {
-    const verifyToken = searchParams.get('token');
-    const path = window.location.pathname;
-    if (path === '/verify-email' && verifyToken) {
-      handleVerifyEmail(verifyToken);
+    const params = new URLSearchParams(window.location.search);
+    const token  = params.get('token');
+    const path   = window.location.pathname;
+
+    if (path === '/verify-email' && token) {
+      handleVerifyEmail(token);
     }
-    if (path === '/reset-password' && verifyToken) {
+    if (path === '/reset-password' && token) {
       setState('resetPassword');
     }
   }, []);
@@ -85,6 +86,7 @@ const Login = () => {
       if (data.success) {
         toast.success('Email verified! You can now log in.');
         navigate('/login');
+        setState('login');
       } else {
         toast.error(data.message);
       }
@@ -120,8 +122,19 @@ const Login = () => {
       }
 
       if (state === 'resetPassword') {
-        const token = searchParams.get('token');
-        const { data } = await axios.post(`${BASE}/api/user/reset-password`, { token, password: newPassword });
+        // ✅ Read token directly from window.location — fixes invalid token bug
+        const params = new URLSearchParams(window.location.search);
+        const token  = params.get('token');
+
+        if (!token) {
+          toast.error('Reset token missing. Please use the link from your email.');
+          return;
+        }
+
+        const { data } = await axios.post(`${BASE}/api/user/reset-password`, {
+          token,
+          password: newPassword,
+        });
         if (!data.success) { toast.error(data.message); return; }
         toast.success('Password reset! You can now log in.');
         navigate('/login');
@@ -200,7 +213,6 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* Name — register only */}
           {state === 'register' && (
             <div style={{ animation: 'loginRise .4s ease both' }}>
               <label style={{ fontSize: 11, color: '#5a5a7a', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Name</label>
@@ -209,7 +221,6 @@ const Login = () => {
             </div>
           )}
 
-          {/* Email */}
           {state !== 'resetPassword' && (
             <div>
               <label style={{ fontSize: 11, color: '#5a5a7a', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Email</label>
@@ -218,7 +229,6 @@ const Login = () => {
             </div>
           )}
 
-          {/* Password — login and register */}
           {(state === 'login' || state === 'register') && (
             <div>
               <label style={{ fontSize: 11, color: '#5a5a7a', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Password</label>
@@ -227,7 +237,6 @@ const Login = () => {
             </div>
           )}
 
-          {/* New password — reset only */}
           {state === 'resetPassword' && (
             <div>
               <label style={{ fontSize: 11, color: '#5a5a7a', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>New Password</label>
@@ -236,7 +245,6 @@ const Login = () => {
             </div>
           )}
 
-          {/* Forgot password link */}
           {state === 'login' && (
             <div style={{ textAlign: 'right', marginTop: -8 }}>
               <span onClick={() => setState('forgotPassword')}
@@ -246,7 +254,6 @@ const Login = () => {
             </div>
           )}
 
-          {/* Submit button */}
           <button type="submit" disabled={loading} style={{
             width: '100%', padding: '12px 0', borderRadius: 10,
             background: loading ? 'rgba(123,94,167,0.4)' : 'linear-gradient(135deg,#7b5ea7,#f067a6)',
@@ -264,15 +271,14 @@ const Login = () => {
                 Processing…
               </>
             ) : (
-              state === 'login'           ? 'Sign In →' :
-              state === 'register'        ? 'Create Account →' :
-              state === 'forgotPassword'  ? 'Send Reset Link →' :
+              state === 'login'          ? 'Sign In →'          :
+              state === 'register'       ? 'Create Account →'   :
+              state === 'forgotPassword' ? 'Send Reset Link →'  :
               'Reset Password →'
             )}
           </button>
         </form>
 
-        {/* Footer */}
         <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: '#5a5a7a' }}>
           {state === 'login' && (
             <>Don't have an account?{' '}
