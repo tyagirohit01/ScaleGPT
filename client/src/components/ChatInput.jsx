@@ -181,63 +181,100 @@ export default function ChatInput({ value, onChange, onSend, loading, selectedMo
         </div>
       </div>
 
-      {/* ✅ MOBILE — only model selector, compact and clean */}
-      <div className="flex md:hidden" style={{
-        marginBottom: 8,
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-        gap: 8,
-      }}>
-        {/* Attach button — mobile only, icon style */}
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          style={{
-            background: '#13131f',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 8,
-            color: '#5a5a7a',
-            width: 34, height: 34,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', fontSize: 16, flexShrink: 0,
-            position: 'relative',
-          }}
-        >
-          📎
-          {files.length > 0 && (
-            <span style={{
-              position: 'absolute', top: -4, right: -4,
-              width: 14, height: 14, borderRadius: '50%',
-              background: '#a370f7', color: '#fff',
-              fontSize: 9, fontWeight: 700,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>{files.length}</span>
-          )}
-        </button>
+      {/* ✅ MOBILE — all 4 tools as icons + model selector in one clean row */}
+<div className="flex md:hidden" style={{
+  marginBottom: 8,
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 6,
+}}>
+  {/* Web */}
+  <button
+    onClick={() => setActive(prev => ({ ...prev, '🌐 Web': !prev['🌐 Web'] }))}
+    style={{
+      background: active['🌐 Web'] ? 'rgba(165,112,247,.1)' : '#13131f',
+      border: active['🌐 Web'] ? '1px solid rgba(165,112,247,.35)' : '1px solid rgba(255,255,255,0.06)',
+      borderRadius: 8, color: active['🌐 Web'] ? '#a370f7' : '#5a5a7a',
+      width: 34, height: 34, flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      cursor: 'pointer', fontSize: 16,
+    }}
+  >🌐</button>
 
-        {/* Model selector — mobile */}
-        <select
-          value={selectedModel}
-          onChange={e => onModelChange(e.target.value)}
-          style={{
-            background: 'rgba(123,94,167,0.1)',
-            border: '1px solid rgba(163,112,247,0.3)',
-            borderRadius: 8, color: '#a370f7',
-            fontFamily: "'Outfit', sans-serif",
-            fontSize: 13, fontWeight: 600,
-            padding: '6px 28px 6px 10px',
-            outline: 'none', cursor: 'pointer', appearance: 'none',
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23a370f7'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 8px center',
-            flex: 1,
-            maxWidth: 160,
-          }}
-        >
-          {MODELS.map(m => (
-            <option key={m} value={m} style={{ background: '#13131f', color: '#f0f0ff' }}>{m}</option>
-          ))}
-        </select>
-      </div>
+  {/* Attach */}
+  <button
+    onClick={() => fileInputRef.current?.click()}
+    style={{
+      background: '#13131f',
+      border: '1px solid rgba(255,255,255,0.06)',
+      borderRadius: 8, color: '#5a5a7a',
+      width: 34, height: 34, flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      cursor: 'pointer', fontSize: 16, position: 'relative',
+    }}
+  >
+    📎
+    {files.length > 0 && (
+      <span style={{
+        position: 'absolute', top: -4, right: -4,
+        width: 14, height: 14, borderRadius: '50%',
+        background: '#a370f7', color: '#fff',
+        fontSize: 9, fontWeight: 700,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>{files.length}</span>
+    )}
+  </button>
+
+  {/* Voice */}
+  <button
+    onClick={() => setActive(prev => ({ ...prev, '🎙 Voice': !prev['🎙 Voice'] }))}
+    style={{
+      background: active['🎙 Voice'] ? 'rgba(165,112,247,.1)' : '#13131f',
+      border: active['🎙 Voice'] ? '1px solid rgba(165,112,247,.35)' : '1px solid rgba(255,255,255,0.06)',
+      borderRadius: 8, color: active['🎙 Voice'] ? '#a370f7' : '#5a5a7a',
+      width: 34, height: 34, flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      cursor: 'pointer', fontSize: 16,
+    }}
+  >🎙</button>
+
+  {/* Memory */}
+  <button
+    onClick={() => setActive(prev => ({ ...prev, '🧠 Memory': !prev['🧠 Memory'] }))}
+    style={{
+      background: active['🧠 Memory'] ? 'rgba(165,112,247,.1)' : '#13131f',
+      border: active['🧠 Memory'] ? '1px solid rgba(165,112,247,.35)' : '1px solid rgba(255,255,255,0.06)',
+      borderRadius: 8, color: active['🧠 Memory'] ? '#a370f7' : '#5a5a7a',
+      width: 34, height: 34, flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      cursor: 'pointer', fontSize: 16,
+    }}
+  >🧠</button>
+
+  {/* Model selector */}
+  <select
+    value={selectedModel}
+    onChange={e => onModelChange(e.target.value)}
+    style={{
+      background: 'rgba(123,94,167,0.1)',
+      border: '1px solid rgba(163,112,247,0.3)',
+      borderRadius: 8, color: '#a370f7',
+      fontFamily: "'Outfit', sans-serif",
+      fontSize: 13, fontWeight: 600,
+      padding: '6px 24px 6px 10px',
+      outline: 'none', cursor: 'pointer', appearance: 'none',
+      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23a370f7'/%3E%3C/svg%3E")`,
+      backgroundRepeat: 'no-repeat',
+      backgroundPosition: 'right 8px center',
+      flex: 1,
+      minWidth: 0,
+    }}
+  >
+    {MODELS.map(m => (
+      <option key={m} value={m} style={{ background: '#13131f', color: '#f0f0ff' }}>{m}</option>
+    ))}
+  </select>
+</div>
 
       {/* Input box */}
       <div
