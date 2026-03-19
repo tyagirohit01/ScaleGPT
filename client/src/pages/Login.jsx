@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useAppContext } from '../context/Appcontext';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 function ParticleCanvas() {
   const canvasRef = useRef(null);
@@ -63,10 +63,11 @@ const Login = () => {
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading]         = useState(false);
   const [focused, setFocused]         = useState('');
+  // ✅ Store token in state so it persists when form is submitted
+  const [resetToken, setResetToken]   = useState('');
   const { loginSuccess }              = useAppContext();
   const navigate                      = useNavigate();
 
-  // ✅ Read token directly from window.location — most reliable
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token  = params.get('token');
@@ -76,6 +77,8 @@ const Login = () => {
       handleVerifyEmail(token);
     }
     if (path === '/reset-password' && token) {
+      // ✅ Save token in state immediately on mount
+      setResetToken(token);
       setState('resetPassword');
     }
   }, []);
@@ -122,21 +125,18 @@ const Login = () => {
       }
 
       if (state === 'resetPassword') {
-        // ✅ Read token directly from window.location — fixes invalid token bug
-        const params = new URLSearchParams(window.location.search);
-        const token  = params.get('token');
-
-        if (!token) {
+        // ✅ Use token from state — reliable, not from URL
+        if (!resetToken) {
           toast.error('Reset token missing. Please use the link from your email.');
           return;
         }
-
         const { data } = await axios.post(`${BASE}/api/user/reset-password`, {
-          token,
+          token: resetToken,
           password: newPassword,
         });
         if (!data.success) { toast.error(data.message); return; }
         toast.success('Password reset! You can now log in.');
+        setResetToken('');
         navigate('/login');
         setState('login');
       }
@@ -182,7 +182,6 @@ const Login = () => {
         animation: 'loginRise .7s cubic-bezier(.16,1,.3,1) both',
       }}>
 
-        {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{
             fontSize: 42, fontWeight: 900, letterSpacing: '-3px', lineHeight: 1, marginBottom: 6,
@@ -192,7 +191,6 @@ const Login = () => {
           <div style={{ fontSize: 13, color: '#5a5a7a', fontWeight: 500 }}>{getTitle()}</div>
         </div>
 
-        {/* Toggle — only show for login/register */}
         {(state === 'login' || state === 'register') && (
           <div style={{
             display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)',
