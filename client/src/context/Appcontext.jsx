@@ -93,8 +93,7 @@ export const AppContextProvider = ({ children }) => {
       if (data?.success && Array.isArray(data.chats)) {
         setChats(data.chats);
         // ✅ ALWAYS show hero — no matter if login, refresh, or reopen
-        // Chats are loaded in sidebar, user picks one manually
-        setSelectedChat(null);
+         setSelectedChat(null);
         setShowHero(true);
         setIsFirstLogin(false);
       } else {
@@ -126,9 +125,10 @@ export const AppContextProvider = ({ children }) => {
           if (exists) return prev;
           return [newChat, ...prev];
         });
-        setSelectedChat(newChat);
+        // ✅ Show hero screen for new chat
+        setSelectedChat(null);
         setShowHero(true);
-        localStorage.setItem("last_chat_id", newChat._id);
+        localStorage.removeItem("last_chat_id");
       }
     } catch (err) {
       toast.error("Failed to create chat");

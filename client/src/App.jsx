@@ -13,13 +13,13 @@ const App = () => {
     <>
       <Toaster />
       <Routes>
-        <Route path="/login"     element={<Login />} />
-        <Route path="/community" element={<Community />} />
-        <Route path="/pricing"   element={<Pricing />} />
-        <Route path="/admin"     element={<AdminDashboard />} />
-        <Route path="/" element={<MainLayout />} />
+        <Route path="/login"          element={<Login />} />
+        <Route path="/community"      element={<Community />} />
+        <Route path="/pricing"        element={<Pricing />} />
+        <Route path="/admin"          element={<AdminDashboard />} />
         <Route path="/verify-email"   element={<Login />} />
         <Route path="/reset-password" element={<Login />} />
+        <Route path="/"               element={<MainLayout />} />
       </Routes>
     </>
   )
@@ -31,14 +31,12 @@ function MainLayout() {
   return (
     <div style={{
       display: "flex",
-      // ✅ Use dvh — dynamic viewport height, accounts for mobile browser bar
       height: "100dvh",
       width: "100vw",
       overflow: "hidden",
       background: "#06060e",
       position: "fixed",
-      top: 0,
-      left: 0,
+      top: 0, left: 0,
     }}>
 
       {/* Ambient orbs */}
@@ -51,14 +49,17 @@ function MainLayout() {
         background: "radial-gradient(circle,rgba(34,211,165,0.07) 0%,transparent 70%)",
       }}/>
 
-      {/* Mobile overlay */}
-       {sidebarOpen && (
+      {/* ✅ Mobile overlay — closes sidebar on tap outside */}
+      {sidebarOpen && (
         <div
-         className="fixed inset-0 bg-black/60 md:hidden"
-         style={{ zIndex: 45 }}
-         onClick={() => setSidebarOpen(false)}
+          style={{
+            position: "fixed", inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            zIndex: 45,
+          }}
+          onClick={() => setSidebarOpen(false)}
         />
-       )}
+      )}
 
       {/* Sidebar */}
       <div className={`
@@ -72,17 +73,11 @@ function MainLayout() {
 
       {/* Main */}
       <div style={{
-        flex: 1,
-        minWidth: 0,
-        position: "relative",
-        zIndex: 10,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        // ✅ Full height, no scrolling at this level
-        height: "100%",
+        flex: 1, minWidth: 0, position: "relative",
+        zIndex: 10, overflow: "hidden",
+        display: "flex", flexDirection: "column", height: "100%",
       }}>
-        <Chatbox onMenuClick={() => setSidebarOpen(true)} />
+        <Chatbox onMenuClick={() => setSidebarOpen(prev => !prev)} />
       </div>
     </div>
   )

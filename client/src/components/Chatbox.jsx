@@ -116,9 +116,7 @@ const Chatbox = ({ onMenuClick }) => {
       let   fullText = "";
       let   realId   = tempId;
       let   realName = updatedChat.name;
-
-      // ✅ Hide typing indicator as soon as stream starts
-      setLoading(false);
+      let   started  = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -134,6 +132,11 @@ const Chatbox = ({ onMenuClick }) => {
             const parsed = JSON.parse(line.slice(6));
 
             if (parsed.delta) {
+              // ✅ Hide typing indicator on first chunk
+              if (!started) {
+                setLoading(false);
+                started = true;
+              }
               fullText += parsed.delta;
               setStreamingText(fullText);
             }
@@ -151,10 +154,10 @@ const Chatbox = ({ onMenuClick }) => {
         }
       }
 
-      // ✅ Streaming done — commit final message to state
+      // ✅ Commit final message to state
       const aiMessage = {
         role:      "assistant",
-        content:   fullText,
+        content:   fullText || "Something went wrong.",
         timestamp: Date.now(),
       };
 
@@ -266,14 +269,20 @@ const Chatbox = ({ onMenuClick }) => {
         WebkitOverflowScrolling: "touch",
       }}>
         {showHero ? (
-          <HeroView onSend={handleSend} />
+          // ✅ clicking chatbox area closes sidebar on mobile
+          <div onClick={onMenuClick} style={{ height: "100%" }}>
+            <HeroView onSend={handleSend} />
+          </div>
         ) : (
-          <div style={{
-            padding: "clamp(8px, 3vw, 16px)",
-            display: "flex", flexDirection: "column",
-            alignItems: "stretch", gap: 0,
-            boxSizing: "border-box", width: "100%",
-          }}>
+          <div
+            onClick={onMenuClick}
+            style={{
+              padding: "clamp(8px, 3vw, 16px)",
+              display: "flex", flexDirection: "column",
+              alignItems: "stretch", gap: 0,
+              boxSizing: "border-box", width: "100%",
+            }}
+          >
             {(selectedChat?.messages || [])
               .filter(msg => msg && msg.role)
               .map((msg, idx) => (
@@ -281,10 +290,8 @@ const Chatbox = ({ onMenuClick }) => {
               ))
             }
 
-            {/* ✅ Typing indicator while waiting for stream to start */}
             {loading && <TypingIndicator />}
 
-            {/* ✅ Streaming text appears word by word */}
             {streamingText && (
               <Message
                 message={{
