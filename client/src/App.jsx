@@ -5,6 +5,7 @@ import Chatbox from './components/Chatbox'
 import Community from './pages/Community'
 import Login from './pages/Login'
 import Pricing from './pages/Pricing'
+import Personalization from './pages/Personalization'
 import { Toaster } from 'react-hot-toast'
 import AdminDashboard from './pages/AdminDashboard'
 
@@ -13,13 +14,14 @@ const App = () => {
     <>
       <Toaster />
       <Routes>
-        <Route path="/login"          element={<Login />} />
-        <Route path="/community"      element={<Community />} />
-        <Route path="/pricing"        element={<Pricing />} />
-        <Route path="/admin"          element={<AdminDashboard />} />
-        <Route path="/verify-email"   element={<Login />} />
-        <Route path="/reset-password" element={<Login />} />
-        <Route path="/"               element={<MainLayout />} />
+        <Route path="/login"            element={<Login />} />
+        <Route path="/community"        element={<Community />} />
+        <Route path="/pricing"          element={<Pricing />} />
+        <Route path="/admin"            element={<AdminDashboard />} />
+        <Route path="/personalization"  element={<Personalization />} />
+        <Route path="/verify-email"     element={<Login />} />
+        <Route path="/reset-password"   element={<Login />} />
+        <Route path="/"                 element={<MainLayout />} />
       </Routes>
     </>
   )
@@ -38,8 +40,6 @@ function MainLayout() {
       position: "fixed",
       top: 0, left: 0,
     }}>
-
-      {/* Ambient orbs */}
       <div className="absolute rounded-full pointer-events-none z-0 hidden md:block" style={{
         width: 560, height: 560, top: -200, left: -80,
         background: "radial-gradient(circle,rgba(123,94,167,0.13) 0%,transparent 70%)",
@@ -49,7 +49,6 @@ function MainLayout() {
         background: "radial-gradient(circle,rgba(34,211,165,0.07) 0%,transparent 70%)",
       }}/>
 
-      {/* ✅ Mobile overlay — closes sidebar on tap outside */}
       {sidebarOpen && (
         <div
           style={{
@@ -61,7 +60,6 @@ function MainLayout() {
         />
       )}
 
-      {/* Sidebar */}
       <div className={`
         fixed md:relative z-50 md:z-10
         h-full
@@ -71,7 +69,6 @@ function MainLayout() {
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </div>
 
-      {/* Main */}
       <div style={{
         flex: 1, minWidth: 0, position: "relative",
         zIndex: 10, overflow: "hidden",

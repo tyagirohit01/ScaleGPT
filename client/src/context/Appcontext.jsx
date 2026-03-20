@@ -50,7 +50,7 @@ export const AppContextProvider = ({ children }) => {
 
   useEffect(() => {
     if (authReady && !user) {
-      const publicPaths = ["/login", "/pricing", "/community"];
+      const publicPaths = ["/login", "/pricing", "/community", "/personalization"];
       if (!publicPaths.includes(window.location.pathname)) {
         navigate("/login");
       }
@@ -92,8 +92,7 @@ export const AppContextProvider = ({ children }) => {
       });
       if (data?.success && Array.isArray(data.chats)) {
         setChats(data.chats);
-        // ✅ ALWAYS show hero — no matter if login, refresh, or reopen
-         setSelectedChat(null);
+        setSelectedChat(null);
         setShowHero(true);
         setIsFirstLogin(false);
       } else {
@@ -125,10 +124,12 @@ export const AppContextProvider = ({ children }) => {
           if (exists) return prev;
           return [newChat, ...prev];
         });
-        // ✅ Select the new chat and show hero so user can start typing
+        // ✅ Auto open the new chat immediately
         setSelectedChat(newChat);
         setShowHero(true);
         localStorage.setItem("last_chat_id", newChat._id);
+        // ✅ Navigate to home so chatbox is visible
+        navigate("/");
       }
     } catch (err) {
       toast.error("Failed to create chat");

@@ -507,7 +507,7 @@ export default function Sidebar({ onClose }) {
               </div>
             </div>
             {[
-              { label: user ? "Personalization" : "Sign In / Sign Up", fn: () => { navigate("/login"); onClose?.(); } },
+              { label: user ? "Personalization" : "Sign In / Sign Up", fn: () => { navigate(user ? "/personalization" : "/login"); onClose?.(); } },
               { label: "Upgrade Plan", fn: () => { navigate("/pricing"); onClose?.(); } },
             ].map(item => (
               <button key={item.label} onClick={item.fn}
