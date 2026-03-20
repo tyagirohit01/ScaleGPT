@@ -1,28 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/Appcontext";
+import axios from "axios";
 import toast from "react-hot-toast";
 
-const TONES = ["Friendly", "Professional", "Concise", "Creative", "Technical"];
-const LANGUAGES = ["English", "Hindi", "Spanish", "French", "German", "Arabic", "Chinese"];
+const TONES      = ["Friendly", "Professional", "Concise", "Creative", "Technical"];
+const LANGUAGES  = ["English", "Hindi", "Spanish", "French", "German", "Arabic", "Chinese"];
 const FONT_SIZES = ["Small", "Default", "Large"];
 const AI_PERSONAS = [
-  { id: "default",  name: "ScaleGPT",    desc: "Balanced, helpful assistant",        emoji: "🤖" },
-  { id: "mentor",   name: "The Mentor",  desc: "Patient, explains everything deeply", emoji: "🎓" },
-  { id: "friend",   name: "The Friend",  desc: "Casual, fun, conversational",         emoji: "👋" },
-  { id: "expert",   name: "The Expert",  desc: "Sharp, technical, no fluff",          emoji: "⚡" },
-  { id: "creative", name: "The Creator", desc: "Imaginative, artistic, inspiring",    emoji: "🎨" },
+  { id: "default",  name: "ScaleGPT",    desc: "Balanced, helpful assistant",         emoji: "🤖" },
+  { id: "mentor",   name: "The Mentor",  desc: "Patient, explains everything deeply",  emoji: "🎓" },
+  { id: "friend",   name: "The Friend",  desc: "Casual, fun, conversational",          emoji: "👋" },
+  { id: "expert",   name: "The Expert",  desc: "Sharp, technical, no fluff",           emoji: "⚡" },
+  { id: "creative", name: "The Creator", desc: "Imaginative, artistic, inspiring",     emoji: "🎨" },
 ];
-
 const ACCENT_COLORS = [
-  { name: "Purple",  value: "#a370f7" },
-  { name: "Pink",    value: "#f067a6" },
-  { name: "Teal",    value: "#22d3a5" },
-  { name: "Blue",    value: "#60a5fa" },
-  { name: "Orange",  value: "#fb923c" },
-  { name: "Red",     value: "#f87171" },
+  { name: "Purple", value: "#a370f7" },
+  { name: "Pink",   value: "#f067a6" },
+  { name: "Teal",   value: "#22d3a5" },
+  { name: "Blue",   value: "#60a5fa" },
+  { name: "Orange", value: "#fb923c" },
+  { name: "Red",    value: "#f87171" },
 ];
-
 const DEFAULTS = {
   aiName:       "ScaleGPT",
   persona:      "default",
@@ -36,34 +35,93 @@ const DEFAULTS = {
   systemPrompt: "",
 };
 
+const BASE = "https://scalegpt-production-c429.up.railway.app";
+
 export default function Personalization() {
-  const navigate   = useNavigate();
-  const { user, logout } = useAppContext();
+  const navigate        = useNavigate();
+  const { user, logout, token, authReady } = useAppContext();
   const [settings, setSettings] = useState(() => {
     try {
       const saved = localStorage.getItem("scalegpt_settings");
       return saved ? { ...DEFAULTS, ...JSON.parse(saved) } : DEFAULTS;
-    } catch {
-      return DEFAULTS;
-    }
+    } catch { return DEFAULTS; }
   });
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved]       = useState(false);
+  const [saving, setSaving]     = useState(false);
 
-  // ✅ Redirect if not logged in
+  // ✅ Unlock body scroll for this page
   useEffect(() => {
-    if (!user) navigate("/login");
-  }, [user]);
+    document.body.style.overflow = "auto";
+    document.body.style.position = "static";
+    document.body.style.height   = "auto";
+    document.documentElement.style.overflow = "auto";
+    document.documentElement.style.position = "static";
+    document.documentElement.style.height   = "auto";
+    return () => {
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.height   = "100%";
+      document.documentElement.style.overflow = "hidden";
+      document.documentElement.style.position = "static";
+      document.documentElement.style.height   = "100%";
+    };
+  }, []);
+
+  // ✅ Wait for authReady before redirecting
+  useEffect(() => {
+    if (authReady && !user) {
+      navigate("/login");
+    }
+  }, [authReady, user]);
+
+  // ✅ Load settings from backend on mount
+  useEffect(() => {
+    if (!user || !token) return;
+    const fetchSettings = async () => {
+      try {
+        const { data } = await axios.get(`${BASE}/api/user/settings`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (data.success && data.settings) {
+          setSettings(prev => ({ ...prev, ...data.settings }));
+          localStorage.setItem("scalegpt_settings", JSON.stringify({ ...DEFAULTS, ...data.settings }));
+        }
+      } catch {
+        // fallback to localStorage — already loaded in useState
+      }
+    };
+    fetchSettings();
+  }, [user, token]);
 
   function update(key, val) {
     setSettings(prev => ({ ...prev, [key]: val }));
     setSaved(false);
   }
 
-  function handleSave() {
-    localStorage.setItem("scalegpt_settings", JSON.stringify(settings));
-    setSaved(true);
-    toast.success("Settings saved!");
-    setTimeout(() => setSaved(false), 2000);
+  async function handleSave() {
+    setSaving(true);
+    try {
+      // ✅ Save to localStorage always
+      localStorage.setItem("scalegpt_settings", JSON.stringify(settings));
+
+      // ✅ Save to backend
+      await axios.post(
+        `${BASE}/api/user/settings`,
+        { settings },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setSaved(true);
+      toast.success("Settings saved!");
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      // Backend not set up yet — still saved locally
+      setSaved(true);
+      toast.success("Settings saved locally!");
+      setTimeout(() => setSaved(false), 2000);
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleReset() {
@@ -72,17 +130,17 @@ export default function Personalization() {
     toast.success("Settings reset to default!");
   }
 
+  if (!authReady || !user) return null;
+
   const Section = ({ title, children }) => (
     <div style={{
       background: "#0c0c1a",
       border: "1px solid rgba(255,255,255,0.06)",
-      borderRadius: 16, padding: "24px",
-      marginBottom: 16,
+      borderRadius: 16, padding: "24px", marginBottom: 16,
     }}>
       <div style={{
         fontSize: 11, fontWeight: 700, color: "#5a5a7a",
-        letterSpacing: "1.2px", textTransform: "uppercase",
-        marginBottom: 18,
+        letterSpacing: "1.2px", textTransform: "uppercase", marginBottom: 18,
       }}>{title}</div>
       {children}
     </div>
@@ -91,7 +149,7 @@ export default function Personalization() {
   const Toggle = ({ label, desc, value, onChange }) => (
     <div style={{
       display: "flex", alignItems: "center",
-      justifyContent: "space-between", padding: "10px 0",
+      justifyContent: "space-between", padding: "12px 0",
       borderBottom: "1px solid rgba(255,255,255,0.04)",
     }}>
       <div>
@@ -102,11 +160,8 @@ export default function Personalization() {
         onClick={() => onChange(!value)}
         style={{
           width: 44, height: 24, borderRadius: 12, cursor: "pointer",
-          background: value
-            ? "linear-gradient(135deg,#7b5ea7,#f067a6)"
-            : "rgba(255,255,255,0.08)",
-          position: "relative", transition: "all .3s",
-          flexShrink: 0, marginLeft: 16,
+          background: value ? "linear-gradient(135deg,#7b5ea7,#f067a6)" : "rgba(255,255,255,0.08)",
+          position: "relative", transition: "all .3s", flexShrink: 0, marginLeft: 16,
           border: value ? "none" : "1px solid rgba(255,255,255,0.1)",
         }}
       >
@@ -114,8 +169,7 @@ export default function Personalization() {
           position: "absolute", top: 3,
           left: value ? 22 : 3,
           width: 18, height: 18, borderRadius: "50%",
-          background: "#fff",
-          transition: "left .3s",
+          background: "#fff", transition: "left .3s",
           boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
         }}/>
       </div>
@@ -126,13 +180,12 @@ export default function Personalization() {
     <div style={{
       minHeight: "100vh", background: "#06060e",
       fontFamily: "'Outfit', sans-serif", color: "#f0f0ff",
-      overflowY: "auto", overflowX: "hidden",
     }}>
 
-      {/* Nav */}
+      {/* Sticky Nav */}
       <div style={{
         position: "sticky", top: 0, zIndex: 10,
-        background: "rgba(6,6,14,0.9)", backdropFilter: "blur(20px)",
+        background: "rgba(6,6,14,0.95)", backdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
         padding: "14px 24px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -142,8 +195,8 @@ export default function Personalization() {
             onClick={() => navigate("/")}
             style={{
               background: "#13131f", border: "1px solid rgba(255,255,255,0.08)",
-              color: "#9090b0", borderRadius: 8,
-              fontSize: 12, padding: "6px 12px", cursor: "pointer",
+              color: "#9090b0", borderRadius: 8, fontSize: 12,
+              padding: "6px 12px", cursor: "pointer", fontFamily: "'Outfit',sans-serif",
             }}
             onMouseEnter={e => e.currentTarget.style.color = "#f0f0ff"}
             onMouseLeave={e => e.currentTarget.style.color = "#9090b0"}
@@ -153,43 +206,54 @@ export default function Personalization() {
             <div style={{ fontSize: 11, color: "#5a5a7a" }}>Customize your ScaleGPT experience</div>
           </div>
         </div>
-
         <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={handleReset}
             style={{
-              background: "transparent",
-              border: "1px solid rgba(255,255,255,0.08)",
-              color: "#9090b0", borderRadius: 8,
-              fontSize: 12, padding: "8px 14px", cursor: "pointer",
+              background: "transparent", border: "1px solid rgba(255,255,255,0.08)",
+              color: "#9090b0", borderRadius: 8, fontSize: 12,
+              padding: "8px 14px", cursor: "pointer", fontFamily: "'Outfit',sans-serif",
             }}
             onMouseEnter={e => e.currentTarget.style.color = "#f0f0ff"}
             onMouseLeave={e => e.currentTarget.style.color = "#9090b0"}
           >Reset</button>
           <button
             onClick={handleSave}
+            disabled={saving}
             style={{
               background: saved
                 ? "linear-gradient(135deg,#22d3a5,#22d3a5)"
                 : "linear-gradient(135deg,#7b5ea7,#f067a6)",
               border: "none", color: "#fff", borderRadius: 8,
-              fontSize: 12, fontWeight: 700,
-              padding: "8px 20px", cursor: "pointer",
-              transition: "all .3s",
+              fontSize: 12, fontWeight: 700, padding: "8px 20px",
+              cursor: saving ? "not-allowed" : "pointer",
+              transition: "all .3s", fontFamily: "'Outfit',sans-serif",
+              display: "flex", alignItems: "center", gap: 6,
             }}
-          >{saved ? "✓ Saved" : "Save Changes"}</button>
+          >
+            {saving ? (
+              <>
+                <div style={{
+                  width: 12, height: 12, borderRadius: "50%",
+                  border: "2px solid rgba(255,255,255,0.3)",
+                  borderTopColor: "#fff",
+                  animation: "spin .7s linear infinite",
+                }}/>
+                Saving…
+              </>
+            ) : saved ? "✓ Saved" : "Save Changes"}
+          </button>
         </div>
       </div>
 
-      <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px 60px" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px 80px" }}>
 
         {/* Profile card */}
         <div style={{
           background: "linear-gradient(135deg,rgba(123,94,167,0.15),rgba(240,103,166,0.08))",
           border: "1px solid rgba(163,112,247,0.2)",
           borderRadius: 16, padding: "20px 24px",
-          display: "flex", alignItems: "center", gap: 16,
-          marginBottom: 16,
+          display: "flex", alignItems: "center", gap: 16, marginBottom: 16,
         }}>
           <div style={{
             width: 52, height: 52, borderRadius: "50%",
@@ -202,6 +266,9 @@ export default function Personalization() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: "#f0f0ff" }}>{user?.name}</div>
             <div style={{ fontSize: 12, color: "#5a5a7a" }}>{user?.email}</div>
+            <div style={{ fontSize: 11, color: "#5a5a7a", marginTop: 2 }}>
+              Member since {new Date(user?.createdAt || Date.now()).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+            </div>
           </div>
           <div style={{
             fontSize: 11, padding: "4px 10px", borderRadius: 20,
@@ -213,6 +280,9 @@ export default function Personalization() {
 
         {/* AI Persona */}
         <Section title="AI Persona">
+          <div style={{ fontSize: 12, color: "#9090b0", marginBottom: 14 }}>
+            Choose how ScaleGPT behaves and communicates with you
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 10 }}>
             {AI_PERSONAS.map(p => (
               <div
@@ -220,117 +290,94 @@ export default function Personalization() {
                 onClick={() => update("persona", p.id)}
                 style={{
                   padding: "14px", borderRadius: 12, cursor: "pointer",
-                  background: settings.persona === p.id
-                    ? "rgba(163,112,247,0.12)" : "rgba(255,255,255,0.02)",
-                  border: settings.persona === p.id
-                    ? "1px solid rgba(163,112,247,0.4)" : "1px solid rgba(255,255,255,0.06)",
+                  background: settings.persona === p.id ? "rgba(163,112,247,0.12)" : "rgba(255,255,255,0.02)",
+                  border: settings.persona === p.id ? "1px solid rgba(163,112,247,0.4)" : "1px solid rgba(255,255,255,0.06)",
                   transition: "all .2s",
                 }}
-                onMouseEnter={e => {
-                  if (settings.persona !== p.id)
-                    e.currentTarget.style.background = "rgba(255,255,255,0.04)";
-                }}
-                onMouseLeave={e => {
-                  if (settings.persona !== p.id)
-                    e.currentTarget.style.background = "rgba(255,255,255,0.02)";
-                }}
+                onMouseEnter={e => { if (settings.persona !== p.id) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
+                onMouseLeave={e => { if (settings.persona !== p.id) e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
               >
                 <div style={{ fontSize: 22, marginBottom: 6 }}>{p.emoji}</div>
-                <div style={{
-                  fontSize: 13, fontWeight: 700, marginBottom: 3,
-                  color: settings.persona === p.id ? "#a370f7" : "#f0f0ff",
-                }}>{p.name}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3, color: settings.persona === p.id ? "#a370f7" : "#f0f0ff" }}>{p.name}</div>
                 <div style={{ fontSize: 11, color: "#5a5a7a", lineHeight: 1.4 }}>{p.desc}</div>
               </div>
             ))}
           </div>
         </Section>
 
-        {/* Custom AI name */}
+        {/* Custom AI Name */}
         <Section title="Custom AI Name">
-          <div style={{ marginBottom: 6 }}>
-            <div style={{ fontSize: 12, color: "#9090b0", marginBottom: 10 }}>
-              Give your AI assistant a custom name
-            </div>
-            <input
-              value={settings.aiName}
-              onChange={e => update("aiName", e.target.value)}
-              placeholder="e.g. Aria, Max, Nova..."
-              style={{
-                width: "100%", background: "#13131f",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderRadius: 10, color: "#f0f0ff", fontSize: 14,
-                padding: "11px 14px", outline: "none",
-                fontFamily: "'Outfit', sans-serif",
-                boxSizing: "border-box",
-              }}
-              onFocus={e => e.target.style.borderColor = "rgba(163,112,247,0.5)"}
-              onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
-            />
+          <div style={{ fontSize: 12, color: "#9090b0", marginBottom: 10 }}>
+            Give your AI assistant a custom name that appears in chat
           </div>
+          <input
+            value={settings.aiName}
+            onChange={e => update("aiName", e.target.value)}
+            placeholder="e.g. Aria, Max, Nova..."
+            style={{
+              width: "100%", background: "#13131f",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 10, color: "#f0f0ff", fontSize: 14,
+              padding: "11px 14px", outline: "none",
+              fontFamily: "'Outfit', sans-serif", boxSizing: "border-box",
+            }}
+            onFocus={e => e.target.style.borderColor = "rgba(163,112,247,0.5)"}
+            onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
+          />
         </Section>
 
         {/* Response Tone */}
         <Section title="Response Tone">
+          <div style={{ fontSize: 12, color: "#9090b0", marginBottom: 14 }}>
+            How should the AI respond to you
+          </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {TONES.map(t => (
-              <button
-                key={t}
-                onClick={() => update("tone", t)}
-                style={{
-                  padding: "8px 16px", borderRadius: 20, cursor: "pointer",
-                  fontSize: 12, fontWeight: 500, transition: "all .2s",
-                  background: settings.tone === t
-                    ? "rgba(163,112,247,0.15)" : "#13131f",
-                  border: settings.tone === t
-                    ? "1px solid rgba(163,112,247,0.4)" : "1px solid rgba(255,255,255,0.07)",
-                  color: settings.tone === t ? "#a370f7" : "#9090b0",
-                }}
-              >{t}</button>
+              <button key={t} onClick={() => update("tone", t)} style={{
+                padding: "8px 16px", borderRadius: 20, cursor: "pointer",
+                fontSize: 12, fontWeight: 500, transition: "all .2s",
+                background: settings.tone === t ? "rgba(163,112,247,0.15)" : "#13131f",
+                border: settings.tone === t ? "1px solid rgba(163,112,247,0.4)" : "1px solid rgba(255,255,255,0.07)",
+                color: settings.tone === t ? "#a370f7" : "#9090b0",
+                fontFamily: "'Outfit',sans-serif",
+              }}>{t}</button>
             ))}
           </div>
         </Section>
 
         {/* Language */}
-        <Section title="Language">
+        <Section title="Preferred Language">
+          <div style={{ fontSize: 12, color: "#9090b0", marginBottom: 14 }}>
+            Language the AI will respond in
+          </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {LANGUAGES.map(l => (
-              <button
-                key={l}
-                onClick={() => update("language", l)}
-                style={{
-                  padding: "8px 16px", borderRadius: 20, cursor: "pointer",
-                  fontSize: 12, fontWeight: 500, transition: "all .2s",
-                  background: settings.language === l
-                    ? "rgba(163,112,247,0.15)" : "#13131f",
-                  border: settings.language === l
-                    ? "1px solid rgba(163,112,247,0.4)" : "1px solid rgba(255,255,255,0.07)",
-                  color: settings.language === l ? "#a370f7" : "#9090b0",
-                }}
-              >{l}</button>
+              <button key={l} onClick={() => update("language", l)} style={{
+                padding: "8px 16px", borderRadius: 20, cursor: "pointer",
+                fontSize: 12, fontWeight: 500, transition: "all .2s",
+                background: settings.language === l ? "rgba(163,112,247,0.15)" : "#13131f",
+                border: settings.language === l ? "1px solid rgba(163,112,247,0.4)" : "1px solid rgba(255,255,255,0.07)",
+                color: settings.language === l ? "#a370f7" : "#9090b0",
+                fontFamily: "'Outfit',sans-serif",
+              }}>{l}</button>
             ))}
           </div>
         </Section>
 
         {/* Accent Color */}
         <Section title="Accent Color">
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 12, color: "#9090b0", marginBottom: 14 }}>
+            Your personal color theme across the app
+          </div>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
             {ACCENT_COLORS.map(c => (
-              <div
-                key={c.value}
-                onClick={() => update("accentColor", c.value)}
-                style={{
-                  display: "flex", flexDirection: "column",
-                  alignItems: "center", gap: 6, cursor: "pointer",
-                }}
+              <div key={c.value} onClick={() => update("accentColor", c.value)}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, cursor: "pointer" }}
               >
                 <div style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: c.value,
-                  border: settings.accentColor === c.value
-                    ? "3px solid #fff" : "3px solid transparent",
-                  boxShadow: settings.accentColor === c.value
-                    ? `0 0 12px ${c.value}` : "none",
+                  width: 36, height: 36, borderRadius: "50%", background: c.value,
+                  border: settings.accentColor === c.value ? "3px solid #fff" : "3px solid transparent",
+                  boxShadow: settings.accentColor === c.value ? `0 0 14px ${c.value}` : "none",
                   transition: "all .2s",
                 }}/>
                 <span style={{ fontSize: 10, color: "#5a5a7a" }}>{c.name}</span>
@@ -343,25 +390,20 @@ export default function Personalization() {
         <Section title="Chat Font Size">
           <div style={{ display: "flex", gap: 8 }}>
             {FONT_SIZES.map(f => (
-              <button
-                key={f}
-                onClick={() => update("fontSize", f)}
-                style={{
-                  padding: "8px 20px", borderRadius: 20, cursor: "pointer",
-                  fontSize: f === "Small" ? 11 : f === "Large" ? 15 : 13,
-                  fontWeight: 500, transition: "all .2s",
-                  background: settings.fontSize === f
-                    ? "rgba(163,112,247,0.15)" : "#13131f",
-                  border: settings.fontSize === f
-                    ? "1px solid rgba(163,112,247,0.4)" : "1px solid rgba(255,255,255,0.07)",
-                  color: settings.fontSize === f ? "#a370f7" : "#9090b0",
-                }}
-              >{f}</button>
+              <button key={f} onClick={() => update("fontSize", f)} style={{
+                padding: "8px 20px", borderRadius: 20, cursor: "pointer",
+                fontSize: f === "Small" ? 11 : f === "Large" ? 15 : 13,
+                fontWeight: 500, transition: "all .2s",
+                background: settings.fontSize === f ? "rgba(163,112,247,0.15)" : "#13131f",
+                border: settings.fontSize === f ? "1px solid rgba(163,112,247,0.4)" : "1px solid rgba(255,255,255,0.07)",
+                color: settings.fontSize === f ? "#a370f7" : "#9090b0",
+                fontFamily: "'Outfit',sans-serif",
+              }}>{f}</button>
             ))}
           </div>
         </Section>
 
-        {/* Custom System Prompt */}
+        {/* System Prompt */}
         <Section title="Custom System Prompt">
           <div style={{ fontSize: 12, color: "#9090b0", marginBottom: 10 }}>
             Give the AI specific instructions it follows in every conversation
@@ -377,15 +419,14 @@ export default function Personalization() {
               borderRadius: 10, color: "#f0f0ff", fontSize: 13,
               padding: "12px 14px", outline: "none",
               fontFamily: "'Outfit', sans-serif",
-              resize: "vertical", lineHeight: 1.6,
-              boxSizing: "border-box",
+              resize: "vertical", lineHeight: 1.6, boxSizing: "border-box",
             }}
             onFocus={e => e.target.style.borderColor = "rgba(163,112,247,0.5)"}
             onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
           />
         </Section>
 
-        {/* Preferences toggles */}
+        {/* Preferences */}
         <Section title="Preferences">
           <Toggle
             label="Memory"
@@ -407,26 +448,47 @@ export default function Personalization() {
           />
         </Section>
 
-        {/* Danger zone */}
+        {/* Stats */}
+        <Section title="Your Stats">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+            {[
+              { label: "Total Chats",     value: "—", icon: "💬" },
+              { label: "Messages Sent",   value: "—", icon: "📨" },
+              { label: "Days Active",     value: "—", icon: "📅" },
+            ].map(s => (
+              <div key={s.label} style={{
+                background: "#13131f",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 12, padding: "16px 14px", textAlign: "center",
+              }}>
+                <div style={{ fontSize: 22, marginBottom: 6 }}>{s.icon}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "#f0f0ff", marginBottom: 3 }}>{s.value}</div>
+                <div style={{ fontSize: 10, color: "#5a5a7a" }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* Account */}
         <Section title="Account">
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
-              onClick={() => { navigate("/pricing"); }}
+              onClick={() => navigate("/pricing")}
               style={{
                 padding: "10px 20px", borderRadius: 10,
                 background: "linear-gradient(135deg,#7b5ea7,#f067a6)",
                 border: "none", color: "#fff", fontSize: 12,
-                fontWeight: 700, cursor: "pointer",
+                fontWeight: 700, cursor: "pointer", fontFamily: "'Outfit',sans-serif",
               }}
             >⚡ Upgrade to Pro</button>
             <button
-              onClick={() => { logout(); }}
+              onClick={() => logout()}
               style={{
                 padding: "10px 20px", borderRadius: 10,
                 background: "transparent",
                 border: "1px solid rgba(248,113,113,0.3)",
                 color: "#f87171", fontSize: 12,
-                fontWeight: 600, cursor: "pointer",
+                fontWeight: 600, cursor: "pointer", fontFamily: "'Outfit',sans-serif",
               }}
               onMouseEnter={e => e.currentTarget.style.background = "rgba(248,113,113,0.08)"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -435,6 +497,8 @@ export default function Personalization() {
         </Section>
 
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

@@ -206,3 +206,24 @@ export const getPublishedImages = async (req, res) => {
     return res.json({ success: false, message: error.message });
   }
 };
+
+// ── GET SETTINGS ──
+export const getSettings = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    return res.json({ success: true, settings: user.settings || {} });
+  } catch (error) {
+    return res.json({ success: false, message: error.message });
+  }
+};
+
+// ── SAVE SETTINGS ──
+export const saveSettings = async (req, res) => {
+  try {
+    const { settings } = req.body;
+    await User.findByIdAndUpdate(req.user._id, { settings });
+    return res.json({ success: true, message: "Settings saved" });
+  } catch (error) {
+    return res.json({ success: false, message: error.message });
+  }
+};

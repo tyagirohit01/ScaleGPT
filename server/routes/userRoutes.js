@@ -5,6 +5,7 @@ import {
   verifyOTP, forgotPassword, resetPassword,
 } from "../controllers/userController.js";
 import { protect } from "../middlewares/Auth.js";
+import { getSettings, saveSettings } from "../controllers/userController.js";
 
 const userRouter = express.Router();
 
@@ -16,5 +17,7 @@ userRouter.post('/verify-otp',      verifyOTP);
 userRouter.post('/forgot-password', forgotPassword);
 userRouter.post('/reset-password',  resetPassword);
 userRouter.get('/published-images', getPublishedImages);
+userRouter.get('/settings',  protect, getSettings);
+userRouter.post('/settings', protect, saveSettings);
 
 export default userRouter;

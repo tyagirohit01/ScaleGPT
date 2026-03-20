@@ -50,9 +50,9 @@ export const AppContextProvider = ({ children }) => {
 
   useEffect(() => {
     if (authReady && !user) {
-      const publicPaths = ["/login", "/pricing", "/community", "/personalization"];
+      const publicPaths = ["/login", "/pricing", "/community"];
       if (!publicPaths.includes(window.location.pathname)) {
-        navigate("/login");
+      navigate("/login");
       }
     }
   }, [authReady, user]);
