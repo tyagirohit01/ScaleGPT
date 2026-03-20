@@ -125,10 +125,10 @@ export const AppContextProvider = ({ children }) => {
           if (exists) return prev;
           return [newChat, ...prev];
         });
-        // ✅ Show hero screen for new chat
-        setSelectedChat(null);
+        // ✅ Select the new chat and show hero so user can start typing
+        setSelectedChat(newChat);
         setShowHero(true);
-        localStorage.removeItem("last_chat_id");
+        localStorage.setItem("last_chat_id", newChat._id);
       }
     } catch (err) {
       toast.error("Failed to create chat");
