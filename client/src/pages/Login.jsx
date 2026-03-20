@@ -56,18 +56,18 @@ function ParticleCanvas() {
 const BASE = 'https://scalegpt-production-c429.up.railway.app';
 
 const Login = () => {
-  const [state, setState]             = useState('login');
-  const [name, setName]               = useState('');
-  const [email, setEmail]             = useState('');
-  const [password, setPassword]       = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [otp, setOtp]                 = useState('');
-  const [otpEmail, setOtpEmail]       = useState('');
-  const [loading, setLoading]         = useState(false);
-  const [focused, setFocused]         = useState('');
-  const [resetToken, setResetToken]   = useState('');
-  const { loginSuccess }              = useAppContext();
-  const navigate                      = useNavigate();
+  const [state, setState]               = useState('login');
+  const [name, setName]                 = useState('');
+  const [email, setEmail]               = useState('');
+  const [password, setPassword]         = useState('');
+  const [newPassword, setNewPassword]   = useState('');
+  const [otp, setOtp]                   = useState('');
+  const [showOtpField, setShowOtpField] = useState(false);
+  const [loading, setLoading]           = useState(false);
+  const [focused, setFocused]           = useState('');
+  const [resetToken, setResetToken]     = useState('');
+  const { loginSuccess }                = useAppContext();
+  const navigate                        = useNavigate();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -79,6 +79,13 @@ const Login = () => {
     }
   }, []);
 
+  // ✅ Reset OTP field when switching tabs
+  const handleTabSwitch = (tab) => {
+    setState(tab);
+    setShowOtpField(false);
+    setOtp('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -87,11 +94,8 @@ const Login = () => {
       if (state === 'login') {
         const { data } = await axios.post(`${BASE}/api/user/login`, { email, password });
         if (!data.success) {
-          // ✅ If not verified, go to OTP screen
           if (data.needsVerification) {
-            setOtpEmail(data.email || email);
-            setState('verifyOTP');
-            toast('Please verify your email first.');
+            toast.error('Please verify your email. Register again to get a new OTP.');
           } else {
             toast.error(data.message);
           }
@@ -103,22 +107,25 @@ const Login = () => {
       }
 
       if (state === 'register') {
-        const { data } = await axios.post(`${BASE}/api/user/register`, { name, email, password });
-        if (!data.success) { toast.error(data.message); return; }
-        // ✅ After register go to OTP screen
-        setOtpEmail(email);
-        setState('verifyOTP');
-        toast.success('OTP sent! Check your email.');
-        setName(''); setPassword('');
-      }
-
-      if (state === 'verifyOTP') {
-        const { data } = await axios.post(`${BASE}/api/user/verify-otp`, { email: otpEmail, otp });
-        if (!data.success) { toast.error(data.message); return; }
-        // ✅ Auto login after OTP verified
-        loginSuccess(data.token);
-        toast.success('Email verified! Welcome to ScaleGPT!');
-        navigate('/');
+        if (!showOtpField) {
+          // ✅ Step 1 — send OTP
+          const { data } = await axios.post(`${BASE}/api/user/register`, { name, email, password });
+          if (!data.success) { toast.error(data.message); return; }
+          setShowOtpField(true);
+          setOtp('');
+          toast.success('OTP sent! Check your email.');
+        } else {
+          // ✅ Step 2 — verify OTP
+          if (otp.length < 6) {
+            toast.error('Please enter the full 6-digit code.');
+            return;
+          }
+          const { data } = await axios.post(`${BASE}/api/user/verify-otp`, { email, otp });
+          if (!data.success) { toast.error(data.message); return; }
+          loginSuccess(data.token);
+          toast.success('Email verified! Welcome to ScaleGPT!');
+          navigate('/');
+        }
       }
 
       if (state === 'forgotPassword') {
@@ -160,10 +167,10 @@ const Login = () => {
   });
 
   const getTitle = () => {
-    if (state === 'verifyOTP')      return 'Check your email';
-    if (state === 'forgotPassword') return 'Reset your password';
-    if (state === 'resetPassword')  return 'Set new password';
-    if (state === 'register')       return 'Create your account';
+    if (state === 'register' && showOtpField) return 'Verify your email';
+    if (state === 'forgotPassword')           return 'Reset your password';
+    if (state === 'resetPassword')            return 'Set new password';
+    if (state === 'register')                 return 'Create your account';
     return 'Welcome back';
   };
 
@@ -185,6 +192,7 @@ const Login = () => {
         animation: 'loginRise .7s cubic-bezier(.16,1,.3,1) both',
       }}>
 
+        {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{
             fontSize: 42, fontWeight: 900, letterSpacing: '-3px', lineHeight: 1, marginBottom: 6,
@@ -194,14 +202,14 @@ const Login = () => {
           <div style={{ fontSize: 13, color: '#5a5a7a', fontWeight: 500 }}>{getTitle()}</div>
         </div>
 
-        {/* Toggle — only for login/register */}
-        {(state === 'login' || state === 'register') && (
+        {/* Toggle — only for login/register and only when OTP not showing */}
+        {(state === 'login' || state === 'register') && !showOtpField && (
           <div style={{
             display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)',
             border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: 4, marginBottom: 24,
           }}>
             {['login', 'register'].map(tab => (
-              <button key={tab} onClick={() => setState(tab)} style={{
+              <button key={tab} onClick={() => handleTabSwitch(tab)} style={{
                 flex: 1, padding: '8px 0', borderRadius: 7,
                 border: state === tab ? '1px solid rgba(163,112,247,0.35)' : '1px solid transparent',
                 background: state === tab ? 'rgba(123,94,167,0.15)' : 'transparent',
@@ -215,14 +223,14 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* OTP screen */}
-          {state === 'verifyOTP' && (
+          {/* ✅ OTP field — shows inline in register form after account created */}
+          {state === 'register' && showOtpField && (
             <div style={{ animation: 'loginRise .4s ease both' }}>
-              <p style={{ fontSize: 12, color: '#9090b0', textAlign: 'center', marginBottom: 16 }}>
-                We sent a 6-digit code to <strong style={{ color: '#f0f0ff' }}>{otpEmail}</strong>
+              <p style={{ fontSize: 12, color: '#9090b0', textAlign: 'center', marginBottom: 20 }}>
+                We sent a 6-digit code to{' '}
+                <strong style={{ color: '#f0f0ff' }}>{email}</strong>
               </p>
-              {/* ✅ 6 individual OTP boxes */}
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 8 }}>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <input
                     key={i}
@@ -236,7 +244,6 @@ const Login = () => {
                       const arr = otp.split('');
                       arr[i] = val;
                       setOtp(arr.join(''));
-                      // auto focus next
                       if (val && i < 5) {
                         document.getElementById(`otp-${i + 1}`)?.focus();
                       }
@@ -246,24 +253,43 @@ const Login = () => {
                         document.getElementById(`otp-${i - 1}`)?.focus();
                       }
                     }}
+                    onFocus={() => setFocused(`otp-${i}`)}
+                    onBlur={() => setFocused('')}
                     style={{
                       width: 44, height: 52, textAlign: 'center',
                       background: focused === `otp-${i}` ? '#1e1e32' : '#13131f',
-                      border: otp[i] ? '1px solid rgba(163,112,247,0.5)' : '1px solid rgba(255,255,255,0.08)',
+                      border: otp[i]
+                        ? '1px solid rgba(163,112,247,0.5)'
+                        : '1px solid rgba(255,255,255,0.08)',
                       borderRadius: 10, color: '#f0f0ff', fontSize: 20,
                       fontWeight: 700, outline: 'none',
                       fontFamily: "'Outfit', sans-serif",
                     }}
-                    onFocus={() => setFocused(`otp-${i}`)}
-                    onBlur={() => setFocused('')}
                   />
                 ))}
+              </div>
+              {/* Resend OTP */}
+              <div style={{ textAlign: 'center', marginTop: 14 }}>
+                <span
+                  onClick={async () => {
+                    try {
+                      await axios.post(`${BASE}/api/user/register`, { name, email, password });
+                      toast.success('New OTP sent!');
+                      setOtp('');
+                    } catch {
+                      toast.error('Failed to resend OTP.');
+                    }
+                  }}
+                  style={{ fontSize: 11, color: '#a370f7', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  Resend OTP
+                </span>
               </div>
             </div>
           )}
 
-          {/* Name */}
-          {state === 'register' && (
+          {/* Name — register only, hide when OTP showing */}
+          {state === 'register' && !showOtpField && (
             <div style={{ animation: 'loginRise .4s ease both' }}>
               <label style={{ fontSize: 11, color: '#5a5a7a', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Name</label>
               <input type="text" required value={name} onChange={e => setName(e.target.value)}
@@ -271,8 +297,8 @@ const Login = () => {
             </div>
           )}
 
-          {/* Email */}
-          {(state === 'login' || state === 'register' || state === 'forgotPassword') && (
+          {/* Email — hide when OTP showing */}
+          {(state === 'login' || state === 'forgotPassword' || (state === 'register' && !showOtpField)) && (
             <div>
               <label style={{ fontSize: 11, color: '#5a5a7a', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Email</label>
               <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
@@ -280,8 +306,8 @@ const Login = () => {
             </div>
           )}
 
-          {/* Password */}
-          {(state === 'login' || state === 'register') && (
+          {/* Password — hide when OTP showing */}
+          {(state === 'login' || (state === 'register' && !showOtpField)) && (
             <div>
               <label style={{ fontSize: 11, color: '#5a5a7a', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Password</label>
               <input type="password" required value={password} onChange={e => setPassword(e.target.value)}
@@ -325,28 +351,30 @@ const Login = () => {
                 Processing…
               </>
             ) : (
-              state === 'login'          ? 'Sign In →'          :
-              state === 'register'       ? 'Create Account →'   :
-              state === 'verifyOTP'      ? 'Verify Code →'      :
-              state === 'forgotPassword' ? 'Send Reset Link →'  :
+              state === 'login'                          ? 'Sign In →'         :
+              state === 'register' && showOtpField       ? 'Verify Code →'     :
+              state === 'register'                       ? 'Create Account →'  :
+              state === 'forgotPassword'                 ? 'Send Reset Link →' :
               'Reset Password →'
             )}
           </button>
         </form>
 
+        {/* Footer */}
         <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: '#5a5a7a' }}>
           {state === 'login' && (
             <>Don't have an account?{' '}
-              <span onClick={() => setState('register')} style={{ color: '#a370f7', cursor: 'pointer', fontWeight: 600 }}>Sign up</span>
+              <span onClick={() => handleTabSwitch('register')} style={{ color: '#a370f7', cursor: 'pointer', fontWeight: 600 }}>Sign up</span>
             </>
           )}
-          {state === 'register' && (
+          {state === 'register' && !showOtpField && (
             <>Already have an account?{' '}
-              <span onClick={() => setState('login')} style={{ color: '#a370f7', cursor: 'pointer', fontWeight: 600 }}>Sign in</span>
+              <span onClick={() => handleTabSwitch('login')} style={{ color: '#a370f7', cursor: 'pointer', fontWeight: 600 }}>Sign in</span>
             </>
           )}
-          {state === 'verifyOTP' && (
-            <span onClick={() => setState('register')} style={{ color: '#a370f7', cursor: 'pointer', fontWeight: 600 }}>← Back</span>
+          {state === 'register' && showOtpField && (
+            <span onClick={() => { setShowOtpField(false); setOtp(''); }}
+              style={{ color: '#a370f7', cursor: 'pointer', fontWeight: 600 }}>← Back</span>
           )}
           {(state === 'forgotPassword' || state === 'resetPassword') && (
             <span onClick={() => setState('login')} style={{ color: '#a370f7', cursor: 'pointer', fontWeight: 600 }}>← Back to Sign In</span>
