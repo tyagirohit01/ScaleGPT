@@ -153,7 +153,7 @@ export const aiChat = async (req, res) => {
     res.setHeader("Connection", "keep-alive");
 
     // ── GEMINI STREAMING ──
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const geminiChat = model.startChat({
       history: chatHistory,
