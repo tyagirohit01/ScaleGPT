@@ -1,10 +1,9 @@
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import Chat from "../models/Chat.js";
 import mongoose from "mongoose";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// ── GEMINI ──
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 function generateSmartTitle(prompt) {
   const text = prompt.trim();
@@ -93,7 +92,7 @@ export const renameChat = async (req, res) => {
   }
 };
 
-// ── AI CHAT WITH REAL OPENAI STREAMING ──
+// ── AI CHAT WITH GEMINI STREAMING ──
 export const aiChat = async (req, res) => {
   try {
     const { prompt, chatId } = req.body;
@@ -136,28 +135,36 @@ export const aiChat = async (req, res) => {
       isImage:   false,
     });
 
-    // build history for OpenAI (last 20 messages to stay within token limits)
+    // build history for Gemini
+    // Gemini uses "user" and "model" roles (not "assistant")
     const history = chat.messages.slice(-20).map(m => ({
-      role:    m.role,
-      content: m.content,
+      role:  m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
     }));
+
+    // last message is the current prompt — remove it from history
+    // and pass separately as the new message
+    const chatHistory = history.slice(0, -1);
+    const currentPrompt = prompt;
 
     // ── SET SSE HEADERS ──
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
-    // ── REAL OPENAI STREAMING ──
-    const stream = await openai.chat.completions.create({
-      model:    "gpt-4o",
-      messages: history,
-      stream:   true,
+    // ── GEMINI STREAMING ──
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const geminiChat = model.startChat({
+      history: chatHistory,
     });
+
+    const result = await geminiChat.sendMessageStream(currentPrompt);
 
     let fullReply = "";
 
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content || "";
+    for await (const chunk of result.stream) {
+      const delta = chunk.text();
       if (delta) {
         fullReply += delta;
         res.write(`data: ${JSON.stringify({ delta })}\n\n`);
@@ -183,7 +190,7 @@ export const aiChat = async (req, res) => {
     res.end();
 
   } catch (error) {
-    console.error("OpenAI error:", error.message);
+    console.error("Gemini error:", error.message);
     if (!res.headersSent) {
       res.status(500).json({ success: false, message: error.message });
     } else {
@@ -192,4 +199,3 @@ export const aiChat = async (req, res) => {
     }
   }
 };
-
