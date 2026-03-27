@@ -1,9 +1,12 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import Chat from "../models/Chat.js";
 import mongoose from "mongoose";
 
-// ── GEMINI ──
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// ── GROQ ──
+const openai = new OpenAI({
+  apiKey:  process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
+});
 
 function generateSmartTitle(prompt) {
   const text = prompt.trim();
@@ -92,7 +95,7 @@ export const renameChat = async (req, res) => {
   }
 };
 
-// ── AI CHAT WITH GEMINI STREAMING ──
+// ── AI CHAT WITH GROQ STREAMING ──
 export const aiChat = async (req, res) => {
   try {
     const { prompt, chatId } = req.body;
@@ -135,36 +138,28 @@ export const aiChat = async (req, res) => {
       isImage:   false,
     });
 
-    // build history for Gemini
-    // Gemini uses "user" and "model" roles (not "assistant")
+    // build history for Groq (last 20 messages)
     const history = chat.messages.slice(-20).map(m => ({
-      role:  m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
+      role:    m.role,
+      content: m.content,
     }));
-
-    // last message is the current prompt — remove it from history
-    // and pass separately as the new message
-    const chatHistory = history.slice(0, -1);
-    const currentPrompt = prompt;
 
     // ── SET SSE HEADERS ──
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
-    // ── GEMINI STREAMING ──
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-    const geminiChat = model.startChat({
-      history: chatHistory,
+    // ── GROQ STREAMING ──
+    const stream = await openai.chat.completions.create({
+      model:    "llama3-8b-8192",
+      messages: history,
+      stream:   true,
     });
-
-    const result = await geminiChat.sendMessageStream(currentPrompt);
 
     let fullReply = "";
 
-    for await (const chunk of result.stream) {
-      const delta = chunk.text();
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content || "";
       if (delta) {
         fullReply += delta;
         res.write(`data: ${JSON.stringify({ delta })}\n\n`);
@@ -190,7 +185,7 @@ export const aiChat = async (req, res) => {
     res.end();
 
   } catch (error) {
-    console.error("Gemini error:", error.message);
+    console.error("Groq error:", error.message);
     if (!res.headersSent) {
       res.status(500).json({ success: false, message: error.message });
     } else {
@@ -199,3 +194,5 @@ export const aiChat = async (req, res) => {
     }
   }
 };
+
+
