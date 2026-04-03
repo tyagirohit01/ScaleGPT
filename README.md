@@ -12,8 +12,9 @@ Live: [scaleai-production.up.railway.app](https://scaleai-production.up.railway.
 - All chats are saved and organized by date
 - Login and register with JWT authentication
 - Upload files and images in chat
+- Rate limting to reduce cost and prevent abuse
 - Switch between AI models mid-conversation
-- Admin dashboard to monitor users and usage
+- Admin dashboard to monitor users and usage tracking
 - Pricing page with Free, Beginner, Advanced, and Enterprise plans
 - Works well on mobile and desktop
 
