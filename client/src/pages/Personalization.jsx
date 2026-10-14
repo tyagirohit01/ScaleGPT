@@ -35,7 +35,7 @@ const DEFAULTS = {
   systemPrompt: "",
 };
 
-const BASE = "https://scalegpt-production-c429.up.railway.app";
+const BASE = "";
 
 export default function Personalization() {
   const navigate        = useNavigate();

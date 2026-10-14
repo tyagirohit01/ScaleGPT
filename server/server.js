@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -70,7 +71,7 @@ const adminLimiter = rateLimit({
 });
 
 app.use(cors({
-  origin: "https://scaleai-production.up.railway.app",
+  origin: ["https://scaleai-production.up.railway.app", "http://localhost:5173"],
   credentials: true,
 }));
 app.use(express.json());

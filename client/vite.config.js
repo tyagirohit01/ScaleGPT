@@ -5,8 +5,8 @@ export default defineConfig({
   plugins: [tailwindcss()],
   server: {
     proxy: {
-      "/api": "https://scalegpt-production-c429.up.railway.app/",
-      "/uploads": "https://scalegpt-production-c429.up.railway.app/",  // ← ADD THIS
+      "/api": "http://localhost:5001",
+      "/uploads": "http://localhost:5001",  // ← ADD THIS
     },
   },
 });

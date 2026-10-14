@@ -53,7 +53,7 @@ function ParticleCanvas() {
   return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}/>;
 }
 
-const BASE = 'https://scalegpt-production-c429.up.railway.app';
+const BASE = '';
 
 const Login = () => {
   const [state, setState]               = useState('login');
