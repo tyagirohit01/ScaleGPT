@@ -94,7 +94,7 @@ const Chatbox = ({ onMenuClick }) => {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SERVER_URL}/api/chat/ai`,
+        `${import.meta.env.VITE_SERVER_URL || ""}/api/chat/ai`,
         {
           method:  "POST",
           headers: {

@@ -151,7 +151,7 @@ export const aiChat = async (req, res) => {
 
     // ── GROQ STREAMING ──
     const stream = await openai.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: history,
       stream:   true,
     });
